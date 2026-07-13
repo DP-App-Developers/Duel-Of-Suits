@@ -1,0 +1,237 @@
+package com.dehong.duelofSuits.game
+
+import com.dehong.duelofSuits.model.Card
+import com.dehong.duelofSuits.model.GamePhase
+import com.dehong.duelofSuits.model.GameState
+import com.dehong.duelofSuits.model.Player
+import com.dehong.duelofSuits.model.Rank
+import com.dehong.duelofSuits.model.Suit
+import com.dehong.duelofSuits.model.TableSlot
+
+object GameEngine {
+
+    fun canDefend(attackCard: Card, defenseCard: Card): Boolean {
+        if (defenseCard is Card.Joker) return true
+        if (attackCard is Card.Joker) return false
+        val attack = attackCard as Card.SuitedCard
+        val defense = defenseCard as Card.SuitedCard
+        return when {
+            defense.suit == Suit.SPADES && attack.suit != Suit.SPADES -> true
+            defense.suit == attack.suit && defense.rank.ordinal > attack.rank.ordinal -> true
+            else -> false
+        }
+    }
+
+    fun validateAttack(cards: List<Card>, state: GameState): String? {
+        if (cards.isEmpty()) return "Select cards to attack"
+        if (cards.any { it is Card.Joker }) return "Jokers cannot be used to attack"
+        val suited = cards.filterIsInstance<Card.SuitedCard>()
+        if (suited.map { it.rank }.toSet().size != 1) return "All attack cards must be the same rank"
+        if (cards.size > 4) return "Can play at most 4 cards"
+        val newTotal = state.tableSlots.size + cards.size
+        if (newTotal > state.defender.hand.size) return "Too many attack cards (defender has ${state.defender.hand.size} cards)"
+        return null
+    }
+
+    fun validateThrowIn(cards: List<Card>, state: GameState): String? {
+        if (cards.isEmpty()) return "Select cards to throw in"
+        if (cards.any { it is Card.Joker }) return "Jokers cannot be thrown in"
+        val existingRanks = getTableRanks(state)
+        val throwRanks = cards.filterIsInstance<Card.SuitedCard>().map { it.rank }.toSet()
+        if (!throwRanks.all { it in existingRanks }) return "Thrown cards must match a rank on the table"
+        val newUndefendedTotal = state.undefendedSlots.size + cards.size
+        if (newUndefendedTotal > state.defender.hand.size) return "Too many cards (defender has ${state.defender.hand.size} cards)"
+        return null
+    }
+
+    fun processAttack(cards: List<Card>, playerIndex: Int, state: GameState): GameState {
+        val newSlots = state.tableSlots + cards.map { TableSlot(attackCard = it) }
+        val updatedPlayers = state.players.toMutableList()
+        val player = updatedPlayers[playerIndex]
+        updatedPlayers[playerIndex] = player.copy(hand = player.hand - cards.toSet())
+        return state.copy(
+            players = updatedPlayers,
+            tableSlots = newSlots,
+            selectedCards = emptySet(),
+            phase = GamePhase.THROW_IN_PHASE,
+            attackerPassedThrowIn = false,
+            otherPassedThrowIn = false,
+            message = "${state.defender.name} must defend"
+        )
+    }
+
+    fun processThrowIn(cards: List<Card>, playerIndex: Int, state: GameState): GameState {
+        val newSlots = state.tableSlots + cards.map { TableSlot(attackCard = it) }
+        val updatedPlayers = state.players.toMutableList()
+        val player = updatedPlayers[playerIndex]
+        updatedPlayers[playerIndex] = player.copy(hand = player.hand - cards.toSet())
+        return state.copy(
+            players = updatedPlayers,
+            tableSlots = newSlots,
+            selectedCards = emptySet(),
+            attackerPassedThrowIn = false,
+            otherPassedThrowIn = false,
+            message = "${state.defender.name} must defend ${newSlots.size} card(s)"
+        )
+    }
+
+    fun processPass(playerIndex: Int, state: GameState): GameState {
+        val isAttacker = playerIndex == state.attackerIndex
+        val newState = if (isAttacker) {
+            state.copy(attackerPassedThrowIn = true)
+        } else {
+            state.copy(otherPassedThrowIn = true)
+        }
+        return checkThrowInEnd(newState)
+    }
+
+    private fun checkThrowInEnd(state: GameState): GameState {
+        if (!state.attackerPassedThrowIn || !state.otherPassedThrowIn) return state
+        // All slots already defended → both non-defenders passing means the turn is over
+        return if (state.allSlotsDefended) {
+            state.copy(
+                phase = GamePhase.REPLENISH_PHASE,
+                attackerPassedThrowIn = false,
+                otherPassedThrowIn = false,
+                message = "Defense successful!"
+            )
+        } else {
+            state.copy(
+                phase = GamePhase.DEFENSE_PHASE,
+                attackerPassedThrowIn = false,
+                otherPassedThrowIn = false,
+                message = "${state.defender.name} is defending"
+            )
+        }
+    }
+
+    fun processDefenseCard(attackCard: Card, defenseCard: Card, playerIndex: Int, state: GameState): GameState {
+        val updatedSlots = state.tableSlots.map { slot ->
+            if (slot.attackCard == attackCard && slot.defenseCard == null) {
+                slot.copy(defenseCard = defenseCard)
+            } else slot
+        }
+        val updatedPlayers = state.players.toMutableList()
+        val player = updatedPlayers[playerIndex]
+        updatedPlayers[playerIndex] = player.copy(hand = player.hand - setOf(defenseCard))
+        val newState = state.copy(
+            players = updatedPlayers,
+            tableSlots = updatedSlots,
+            selectedCards = emptySet(),
+            selectedHandCardForDefense = null
+        )
+        return if (newState.allSlotsDefended) {
+            newState.copy(message = "All defended! Continue or end turn")
+        } else {
+            newState.copy(message = "${newState.undefendedSlots.size} card(s) left to defend")
+        }
+    }
+
+    fun resolveSuccessfulDefense(state: GameState): GameState {
+        val allTableCards = state.tableSlots.flatMap { slot ->
+            listOfNotNull(slot.attackCard, slot.defenseCard)
+        }
+        return state.copy(
+            discardPile = state.discardPile + allTableCards,
+            tableSlots = emptyList(),
+            phase = GamePhase.REPLENISH_PHASE,
+            message = "Defense successful! Drawing cards..."
+        )
+    }
+
+    fun resolveFailedDefense(state: GameState): GameState {
+        val allTableCards = state.tableSlots.flatMap { slot ->
+            listOfNotNull(slot.attackCard, slot.defenseCard)
+        }
+        val defenderIdx = state.defenderIndex
+        val updatedPlayers = state.players.toMutableList()
+        val defender = updatedPlayers[defenderIdx]
+        updatedPlayers[defenderIdx] = defender.copy(
+            hand = defender.hand + allTableCards,
+            skipNextAttack = true
+        )
+        val nextAttackerIdx = state.otherIndex
+        val nextDefenderIdx = (nextAttackerIdx + 1) % 3
+        return state.copy(
+            players = updatedPlayers,
+            tableSlots = emptyList(),
+            phase = GamePhase.ATTACK_PHASE,
+            attackerIndex = nextAttackerIdx,
+            defenderIndex = nextDefenderIdx,
+            selectedCards = emptySet(),
+            selectedHandCardForDefense = null,
+            message = "${defender.name} takes all cards. ${updatedPlayers[nextAttackerIdx].name} attacks!"
+        )
+    }
+
+    fun replenish(state: GameState): GameState {
+        val order = listOf(state.attackerIndex, state.defenderIndex, state.otherIndex)
+        var drawPile = state.drawPile
+        val players = state.players.toMutableList()
+
+        for (idx in order) {
+            val player = players[idx]
+            val needed = (8 - player.hand.size).coerceAtLeast(0)
+            if (needed > 0 && drawPile.isNotEmpty()) {
+                val drawn = drawPile.take(needed)
+                drawPile = drawPile.drop(drawn.size)
+                players[idx] = player.copy(hand = player.hand + drawn)
+            }
+        }
+
+        val (nextAttackerIdx, nextDefenderIdx) = resolveNextRoles(players, state.defenderIndex)
+
+        return state.copy(
+            players = players,
+            drawPile = drawPile,
+            phase = GamePhase.ATTACK_PHASE,
+            attackerIndex = nextAttackerIdx,
+            defenderIndex = nextDefenderIdx,
+            message = "${players[nextAttackerIdx].name} attacks!"
+        )
+    }
+
+    private fun resolveNextRoles(players: List<Player>, candidateAttackerIdx: Int): Pair<Int, Int> {
+        val mutablePlayers = players.toMutableList()
+        var attackerIdx = candidateAttackerIdx
+        if (mutablePlayers[attackerIdx].skipNextAttack) {
+            mutablePlayers[attackerIdx] = mutablePlayers[attackerIdx].copy(skipNextAttack = false)
+            attackerIdx = (attackerIdx + 1) % 3
+        }
+        val defenderIdx = (attackerIdx + 1) % 3
+        return Pair(attackerIdx, defenderIdx)
+    }
+
+    fun applyJokerOnlyRule(state: GameState): GameState {
+        val attacker = state.attacker
+        if (state.drawPile.isNotEmpty()) return state
+        if (attacker.hand.isEmpty()) return state
+        if (!attacker.hand.all { it is Card.Joker }) return state
+        if (state.discardPile.isEmpty()) return state
+
+        val toDraw = state.discardPile.takeLast(3)
+        val newDiscard = state.discardPile.dropLast(toDraw.size)
+        val updatedPlayers = state.players.toMutableList()
+        val p = updatedPlayers[state.attackerIndex]
+        updatedPlayers[state.attackerIndex] = p.copy(hand = p.hand + toDraw)
+        return state.copy(
+            players = updatedPlayers,
+            discardPile = newDiscard,
+            message = "${attacker.name} has only Jokers — drew ${toDraw.size} cards from discard"
+        )
+    }
+
+    fun checkWinner(state: GameState): Int? {
+        if (state.drawPile.isNotEmpty()) return null
+        return state.players.firstOrNull { it.hand.isEmpty() }?.id
+    }
+
+    fun getTableRanks(state: GameState): Set<Rank> {
+        return state.tableSlots.flatMap { slot ->
+            listOfNotNull(
+                (slot.attackCard as? Card.SuitedCard)?.rank,
+                (slot.defenseCard as? Card.SuitedCard)?.rank
+            )
+        }.toSet()
+    }
+}
