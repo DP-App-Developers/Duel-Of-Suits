@@ -56,7 +56,7 @@ import com.dehong.duelofSuits.ui.components.AiPlayerArea
 import com.dehong.duelofSuits.ui.components.CardView
 import com.dehong.duelofSuits.ui.components.CARD_HEIGHT
 import com.dehong.duelofSuits.ui.components.CARD_WIDTH
-import com.dehong.duelofSuits.ui.components.DrawDiscardPiles
+import com.dehong.duelofSuits.ui.components.DrawPile
 import com.dehong.duelofSuits.ui.components.GameInfoOverlay
 import com.dehong.duelofSuits.ui.components.GameTable
 import com.dehong.duelofSuits.ui.components.PlayerHand
@@ -156,9 +156,8 @@ private fun GameLayout(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    DrawDiscardPiles(
-                        drawPileCount = state.drawPileCount,
-                        discardTopCard = state.discardPile.lastOrNull(),
+                    DrawPile(
+                        count = state.drawPileCount,
                         registry = registry
                     )
                     TrumpIndicator()
@@ -281,7 +280,7 @@ private fun handleAnimationEvent(
                     ?: registry.getOffset(PositionKey.PlayerArea(event.fromPlayerId))
                 val endOffset = registry.getOffset(PositionKey.DefenseSlot(event.toSlotIndex))
                     .takeIf { it != Offset.Zero }
-                    ?: registry.getOffset(PositionKey.DiscardPile)
+                    ?: registry.getOffset(PositionKey.DrawPile)
 
                 animateCard(
                     id = "def_${event.card.hashCode()}",
@@ -320,7 +319,7 @@ private fun handleAnimationEvent(
 
         is AnimationEvent.TableToDiscard -> {
             scope.launch {
-                val end = registry.getOffset(PositionKey.DiscardPile)
+                val end = registry.getOffset(PositionKey.DrawPile)
                 event.cards.forEachIndexed { i, card ->
                     val slotIdx = i / 2
                     val start = registry.getOffset(

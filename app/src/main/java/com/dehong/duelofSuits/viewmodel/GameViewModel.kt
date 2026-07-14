@@ -189,10 +189,12 @@ class GameViewModel : ViewModel() {
                 if (error != null) { _errorMessage.value = error; return }
                 viewModelScope.launch {
                     val newState = GameEngine.processAttack(selected, 0, state)
+                    // Update state first so the new AttackSlot is registered in the position registry
+                    // before the animation tries to look it up.
+                    _gameState.value = newState.copy(attackerPassedThrowIn = true)
+                    delay(50L)
                     emitPlayCardAnimations(selected, 0, state.tableSlots.size)
                     delay(300L * selected.size)
-                    // Human attacker implicitly passes throw-in; no need to press Pass after attacking.
-                    _gameState.value = newState.copy(attackerPassedThrowIn = true)
                     checkAndRunAiTurn()
                 }
             }
@@ -210,9 +212,10 @@ class GameViewModel : ViewModel() {
                     } else {
                         newState.copy(otherPassedThrowIn = true)
                     }
+                    _gameState.value = newState
+                    delay(50L)
                     emitPlayCardAnimations(selected, 0, state.tableSlots.size)
                     delay(300L * selected.size)
-                    _gameState.value = newState
                     checkAndRunAiTurn()
                 }
             }
@@ -326,9 +329,10 @@ class GameViewModel : ViewModel() {
         }
 
         val newState = GameEngine.processAttack(cards, attackerIdx, currentState)
+        _gameState.value = newState
+        delay(50L)
         emitPlayCardAnimations(cards, attackerIdx, currentState.tableSlots.size)
         delay(300L * cards.size)
-        _gameState.value = newState
 
         delay(600L)
         checkAndRunAiTurn()
@@ -358,9 +362,10 @@ class GameViewModel : ViewModel() {
                 // Restore human's implicit pass — processThrowIn resets both flags.
                 if (humanAttackerPassed) newState = newState.copy(attackerPassedThrowIn = true)
                 if (humanOtherPassed) newState = newState.copy(otherPassedThrowIn = true)
+                _gameState.value = newState
+                delay(50L)
                 emitPlayCardAnimations(cards, playerIdx, currentState.tableSlots.size)
                 delay(300L * cards.size)
-                _gameState.value = newState
                 delay(500L)
             }
         }
