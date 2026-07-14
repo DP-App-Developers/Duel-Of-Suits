@@ -5,6 +5,7 @@ import androidx.compose.animation.core.AnimationVector2D
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -60,7 +61,6 @@ import com.dehong.duelofSuits.ui.components.DrawPile
 import com.dehong.duelofSuits.ui.components.GameInfoOverlay
 import com.dehong.duelofSuits.ui.components.GameTable
 import com.dehong.duelofSuits.ui.components.PlayerHand
-import com.dehong.duelofSuits.ui.components.TrumpIndicator
 import com.dehong.duelofSuits.ui.theme.ActionGreen
 import com.dehong.duelofSuits.ui.theme.DangerRed
 import com.dehong.duelofSuits.ui.theme.TableGreen
@@ -128,6 +128,16 @@ private fun GameLayout(
     registry: PositionRegistry,
     viewModel: GameViewModel
 ) {
+    val tableAlpha = remember { Animatable(1f) }
+    LaunchedEffect(state.tableClearing) {
+        if (state.tableClearing) {
+            tableAlpha.snapTo(1f)
+            tableAlpha.animateTo(0f, animationSpec = tween(700, easing = FastOutSlowInEasing))
+        } else {
+            tableAlpha.snapTo(1f)
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
@@ -152,22 +162,18 @@ private fun GameLayout(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    DrawPile(
-                        count = state.drawPileCount,
-                        registry = registry
-                    )
-                    TrumpIndicator()
-                }
-
-                GameTable(
-                    state = state,
-                    registry = registry,
-                    onDefenseSlotTapped = viewModel::onDefenseSlotTapped
+                DrawPile(
+                    count = state.drawPileCount,
+                    registry = registry
                 )
+
+                Box(modifier = if (state.tableClearing) Modifier.alpha(tableAlpha.value) else Modifier) {
+                    GameTable(
+                        state = state,
+                        registry = registry,
+                        onDefenseSlotTapped = if (state.tableClearing) { _ -> } else viewModel::onDefenseSlotTapped
+                    )
+                }
             }
 
             AiPlayerArea(
@@ -317,32 +323,6 @@ private fun handleAnimationEvent(
             }
         }
 
-        is AnimationEvent.TableToDiscard -> {
-            scope.launch {
-                val end = registry.getOffset(PositionKey.DrawPile)
-                event.cards.forEachIndexed { i, card ->
-                    val slotIdx = i / 2
-                    val start = registry.getOffset(
-                        if (i % 2 == 0) PositionKey.AttackSlot(slotIdx)
-                        else PositionKey.DefenseSlot(slotIdx)
-                    ).takeIf { it != Offset.Zero }
-                        ?: registry.getOffset(PositionKey.DrawPile)
-                    scope.launch {
-                        delay(i * 40L)
-                        animateCard(
-                            id = "discard_$i",
-                            card = card,
-                            faceDown = false,
-                            from = start,
-                            to = end,
-                            durationMs = 300,
-                            flyingCards = flyingCards
-                        )
-                    }
-                }
-            }
-        }
-
         is AnimationEvent.TableToPlayer -> {
             scope.launch {
                 val end = registry.getOffset(PositionKey.PlayerArea(event.targetPlayerId))
@@ -391,6 +371,7 @@ private suspend fun animateCard(
     animatable.animateTo(to, animationSpec = tween(durationMs, easing = FastOutSlowInEasing))
     flyingCards.remove(flying)
 }
+
 
 @Composable
 private fun GameOverOverlay(state: GameState, onRestart: () -> Unit) {

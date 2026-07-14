@@ -36,7 +36,8 @@ data class GameState(
     val winnerId: Int? = null,
     val attackerPassedThrowIn: Boolean = false,
     val otherPassedThrowIn: Boolean = false,
-    val animating: Boolean = false
+    val animating: Boolean = false,
+    val tableClearing: Boolean = false
 ) {
     val otherIndex: Int get() = (0 + 1 + 2) - attackerIndex - defenderIndex
     val attacker: Player get() = players[attackerIndex]

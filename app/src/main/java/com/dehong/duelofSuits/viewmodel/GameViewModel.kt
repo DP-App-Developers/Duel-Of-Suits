@@ -409,14 +409,12 @@ class GameViewModel : ViewModel() {
     }
 
     private suspend fun resolveSuccessfulDefenseFlow(state: GameState) {
+        // Signal the UI to start fading the table cards — slots are still in state so they render
+        _gameState.value = state.copy(tableClearing = true)
+        delay(750L)  // Wait for the 700ms fade to finish
         val resolvedState = GameEngine.resolveSuccessfulDefense(state)
-        _animationEvents.emit(AnimationEvent.TableToDiscard(
-            state.tableSlots.flatMap { listOfNotNull(it.attackCard, it.defenseCard) }
-        ))
-        delay(400L)
-        _gameState.value = resolvedState
+        _gameState.value = resolvedState  // tableClearing defaults to false
 
-        delay(200L)
         val replenishedState = GameEngine.replenish(resolvedState)
         val winner = GameEngine.checkWinner(replenishedState)
         if (winner != null) {

@@ -68,6 +68,5 @@ sealed class AnimationEvent {
         val toSlotIndex: Int
     ) : AnimationEvent()
 
-    data class TableToDiscard(val cards: List<Card>) : AnimationEvent()
     data class TableToPlayer(val targetPlayerId: Int, val cards: List<Card>) : AnimationEvent()
 }
