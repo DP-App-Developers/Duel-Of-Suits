@@ -3,17 +3,18 @@ package com.dehong.duelofSuits.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -60,47 +61,25 @@ fun AiPlayerArea(
     Column(
         modifier = modifier
             .fillMaxHeight()
-            .padding(6.dp),
+            .padding(horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        Box(
-            modifier = Modifier
-                .background(roleColor, RoundedCornerShape(4.dp))
-                .padding(horizontal = 6.dp, vertical = 2.dp)
-        ) {
-            Text(
-                text = player.name,
-                color = Color.White,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .padding(top = 2.dp)
-                .background(CounterBackground, RoundedCornerShape(4.dp))
-                .padding(horizontal = 6.dp, vertical = 2.dp)
-        ) {
-            Text(
-                text = "${player.hand.size} cards",
-                color = TextOnDark,
-                fontSize = 10.sp
-            )
-        }
-
         val faceDownCards = minOf(player.hand.size, 5)
+
+        // Card fan at the very top — top 20% hangs off the screen edge
         Box(
             modifier = Modifier
-                .padding(top = 6.dp)
-                .border(2.dp, roleColor.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
-                .padding(8.dp)
+                .fillMaxWidth()
+                .height(CARD_HEIGHT * 0.8f)
+                .clipToBounds()
         ) {
             if (faceDownCards > 0) {
                 Box(
                     modifier = Modifier
                         .size((CARD_WIDTH.value + (faceDownCards - 1) * 6).dp, CARD_HEIGHT)
+                        .align(Alignment.TopCenter)
+                        .offset { IntOffset(0, -(CARD_HEIGHT * 0.2f).roundToPx()) }
                         .onGloballyPositioned { coords ->
                             registry.register(PositionKey.PlayerArea(player.id), coords)
                         }
@@ -119,6 +98,8 @@ fun AiPlayerArea(
                 Box(
                     modifier = Modifier
                         .size(CARD_WIDTH, CARD_HEIGHT)
+                        .align(Alignment.TopCenter)
+                        .offset { IntOffset(0, -(CARD_HEIGHT * 0.2f).roundToPx()) }
                         .onGloballyPositioned { coords ->
                             registry.register(PositionKey.PlayerArea(player.id), coords)
                         }
@@ -126,20 +107,50 @@ fun AiPlayerArea(
             }
         }
 
+        // Labels below the card fan
+        Box(
+            modifier = Modifier
+                .padding(top = 4.dp)
+                .background(roleColor, RoundedCornerShape(4.dp))
+                .padding(horizontal = 6.dp, vertical = 2.dp)
+        ) {
+            Text(
+                text = player.name,
+                color = Color.White,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .padding(top = 2.dp)
+                .background(CounterBackground, RoundedCornerShape(4.dp))
+                .padding(horizontal = 6.dp, vertical = 2.dp)
+        ) {
+            Text(
+                text = "${player.hand.size}",
+                color = TextOnDark,
+                fontSize = 10.sp
+            )
+        }
+
         if (state.phase != GamePhase.GAME_OVER) {
             val roleLabel = when {
-                isAttacker -> "ATTACKING"
-                isDefender -> "DEFENDING"
-                else -> "WATCHING"
+                isAttacker -> "ATK"
+                isDefender -> "DEF"
+                else -> ""
             }
-            Text(
-                text = roleLabel,
-                color = roleColor.copy(alpha = 0.8f),
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.8.sp,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+            if (roleLabel.isNotEmpty()) {
+                Text(
+                    text = roleLabel,
+                    color = roleColor.copy(alpha = 0.8f),
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
         }
     }
 }
@@ -165,23 +176,25 @@ fun AiSideArea(
         label = "aiSideRoleColor"
     )
 
+    // Total column width: visible card portion (80%) + space for labels
+    val visibleCardWidth = CARD_WIDTH * 0.8f
     Column(
         modifier = modifier
             .fillMaxHeight()
-            .width(CARD_WIDTH + 36.dp)
-            .padding(6.dp),
+            .width(visibleCardWidth + 20.dp)
+            .padding(end = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Box(
             modifier = Modifier
                 .background(roleColor, RoundedCornerShape(4.dp))
-                .padding(horizontal = 6.dp, vertical = 2.dp)
+                .padding(horizontal = 4.dp, vertical = 2.dp)
         ) {
             Text(
                 text = player.name,
                 color = Color.White,
-                fontSize = 10.sp,
+                fontSize = 9.sp,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -190,7 +203,7 @@ fun AiSideArea(
             modifier = Modifier
                 .padding(top = 2.dp)
                 .background(CounterBackground, RoundedCornerShape(4.dp))
-                .padding(horizontal = 6.dp, vertical = 2.dp)
+                .padding(horizontal = 4.dp, vertical = 2.dp)
         ) {
             Text(
                 text = "${player.hand.size}",
@@ -200,16 +213,13 @@ fun AiSideArea(
         }
 
         val faceDownCards = minOf(player.hand.size, 6)
-        Box(
-            modifier = Modifier
-                .padding(top = 6.dp)
-                .border(2.dp, roleColor.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
-                .padding(8.dp)
-        ) {
+        // Cards offset left so 20% hangs off the left screen edge (screen clips naturally)
+        Box(modifier = Modifier.padding(top = 6.dp)) {
             if (faceDownCards > 0) {
                 Box(
                     modifier = Modifier
                         .size(CARD_WIDTH, (CARD_HEIGHT.value + (faceDownCards - 1) * 8).dp)
+                        .offset { IntOffset(-(CARD_WIDTH * 0.2f).roundToPx(), 0) }
                         .onGloballyPositioned { coords ->
                             registry.register(PositionKey.PlayerArea(player.id), coords)
                         }
@@ -228,6 +238,7 @@ fun AiSideArea(
                 Box(
                     modifier = Modifier
                         .size(CARD_WIDTH, CARD_HEIGHT)
+                        .offset { IntOffset(-(CARD_WIDTH * 0.2f).roundToPx(), 0) }
                         .onGloballyPositioned { coords ->
                             registry.register(PositionKey.PlayerArea(player.id), coords)
                         }
@@ -239,16 +250,18 @@ fun AiSideArea(
             val roleLabel = when {
                 isAttacker -> "ATK"
                 isDefender -> "DEF"
-                else -> "WATCH"
+                else -> ""
             }
-            Text(
-                text = roleLabel,
-                color = roleColor.copy(alpha = 0.8f),
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.8.sp,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+            if (roleLabel.isNotEmpty()) {
+                Text(
+                    text = roleLabel,
+                    color = roleColor.copy(alpha = 0.8f),
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
         }
     }
 }

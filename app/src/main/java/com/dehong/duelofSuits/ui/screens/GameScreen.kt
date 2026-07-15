@@ -111,11 +111,20 @@ fun GameScreen(
                     onRestart = viewModel::restartGame,
                     onHome = onNavigateHome
                 )
-                else -> GameLayout(
-                    state = state,
-                    registry = registry,
-                    viewModel = viewModel
-                )
+                else -> {
+                    GameLayout(
+                        state = state,
+                        registry = registry,
+                        viewModel = viewModel
+                    )
+
+                    // Draw pile anchored to the right edge
+                    DrawPileOverlay(
+                        state = state,
+                        registry = registry,
+                        modifier = Modifier.align(Alignment.TopEnd)
+                    )
+                }
             }
 
             FlyingCardLayer(flyingCards = flyingCards)
@@ -163,25 +172,17 @@ private fun CenterPanel(
         }
     }
 
-    Column(
+    Box(
         modifier = modifier.padding(vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        contentAlignment = Alignment.Center
     ) {
-        DrawPile(
-            count = state.drawPileCount,
+        val tableModifier = if (state.tableClearing) Modifier.alpha(tableAlpha.value) else Modifier
+        GameTable(
+            state = state,
             registry = registry,
-            trumpCard = state.trumpCard
+            onDefenseSlotTapped = if (state.tableClearing) { _ -> } else viewModel::onDefenseSlotTapped,
+            modifier = tableModifier
         )
-        TrumpIndicator(trumpSuit = state.trumpSuit)
-
-        Box(modifier = if (state.tableClearing) Modifier.alpha(tableAlpha.value) else Modifier) {
-            GameTable(
-                state = state,
-                registry = registry,
-                onDefenseSlotTapped = if (state.tableClearing) { _ -> } else viewModel::onDefenseSlotTapped
-            )
-        }
     }
 }
 
@@ -231,7 +232,7 @@ private fun TwoPlayerLayout(
             registry = registry,
             onCardTapped = viewModel::onHumanCardTapped,
             getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
-            modifier = Modifier.fillMaxWidth().weight(0.45f).padding(bottom = 6.dp)
+            modifier = Modifier.fillMaxWidth().weight(0.45f)
         )
     }
 }
@@ -288,7 +289,7 @@ private fun ThreePlayerLayout(
             registry = registry,
             onCardTapped = viewModel::onHumanCardTapped,
             getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
-            modifier = Modifier.fillMaxWidth().weight(0.38f).padding(bottom = 6.dp)
+            modifier = Modifier.fillMaxWidth().weight(0.38f)
         )
     }
 }
@@ -354,13 +355,35 @@ private fun FourPlayerLayout(
                 registry = registry,
                 onCardTapped = viewModel::onHumanCardTapped,
                 getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
-                modifier = Modifier.fillMaxWidth().weight(0.38f).padding(bottom = 6.dp)
+                modifier = Modifier.fillMaxWidth().weight(0.38f)
             )
         }
     }
 }
 
 // ── Shared composables ───────────────────────────────────────────────────────
+
+@Composable
+private fun DrawPileOverlay(
+    state: GameState,
+    registry: PositionRegistry,
+    modifier: Modifier = Modifier
+) {
+    // Top 20% of the screen is taken by AI hand; position draw pile just below that
+    val topOffset = CARD_HEIGHT * 0.8f + 8.dp
+    Column(
+        modifier = modifier.padding(top = topOffset, end = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        DrawPile(
+            count = state.drawPileCount,
+            registry = registry,
+            trumpCard = state.trumpCard
+        )
+        TrumpIndicator(trumpSuit = state.trumpSuit)
+    }
+}
 
 @Composable
 private fun FlyingCardLayer(flyingCards: List<FlyingCard>) {

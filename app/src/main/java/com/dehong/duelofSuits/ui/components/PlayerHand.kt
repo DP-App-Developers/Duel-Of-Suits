@@ -3,7 +3,6 @@ package com.dehong.duelofSuits.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -11,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
@@ -73,52 +74,48 @@ fun PlayerHand(
     getSelectionState: (Card) -> CardSelectionState,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    Box(
         modifier = modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        contentAlignment = Alignment.BottomCenter
     ) {
-        HandCountBadge(
-            player = player,
-            state = state,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            HandCountBadge(
+                player = player,
+                state = state,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
 
-        val roleColor = when {
-            state.attackerIndex == player.id -> Color(0xFFFF8F00)
-            state.defenderIndex == player.id -> Color(0xFFB71C1C)
-            else -> ActionGreen
-        }
+            val hand = sortedHand(player.hand)
 
-        val hand = sortedHand(player.hand)
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-                .border(2.dp, roleColor.copy(alpha = 0.7f), RoundedCornerShape(10.dp))
-                .padding(8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(CARD_OVERLAP),
-                modifier = Modifier.horizontalScroll(rememberScrollState())
+            // Clip to 80% of card height — bottom 20% hangs off the screen edge
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(CARD_HEIGHT * 0.8f)
+                    .clipToBounds(),
+                contentAlignment = Alignment.Center
             ) {
-                hand.forEachIndexed { idx, card ->
-                    val selState = getSelectionState(card)
-                    val yOffset = if (selState == CardSelectionState.SELECTED) (-8).dp else 0.dp
-                    CardView(
-                        card = card,
-                        selectionState = selState,
-                        modifier = Modifier
-                            .zIndex(idx.toFloat())
-                            .offset { IntOffset(0, yOffset.roundToPx()) }
-                            .onGloballyPositioned { coords ->
-                                registry.register(PositionKey.HandCard(player.id, idx), coords)
-                            }
-                            .clickable(enabled = selState != CardSelectionState.DISABLED) {
-                                onCardTapped(card)
-                            }
-                    )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(CARD_OVERLAP),
+                    modifier = Modifier.horizontalScroll(rememberScrollState())
+                ) {
+                    hand.forEachIndexed { idx, card ->
+                        val selState = getSelectionState(card)
+                        val yOffset = if (selState == CardSelectionState.SELECTED) (-8).dp else 0.dp
+                        CardView(
+                            card = card,
+                            selectionState = selState,
+                            modifier = Modifier
+                                .zIndex(idx.toFloat())
+                                .offset { IntOffset(0, yOffset.roundToPx()) }
+                                .onGloballyPositioned { coords ->
+                                    registry.register(PositionKey.HandCard(player.id, idx), coords)
+                                }
+                                .clickable(enabled = selState != CardSelectionState.DISABLED) {
+                                    onCardTapped(card)
+                                }
+                        )
+                    }
                 }
             }
         }
