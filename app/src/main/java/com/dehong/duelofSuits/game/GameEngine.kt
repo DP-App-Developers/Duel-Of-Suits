@@ -10,13 +10,13 @@ import com.dehong.duelofSuits.model.TableSlot
 
 object GameEngine {
 
-    fun canDefend(attackCard: Card, defenseCard: Card): Boolean {
+    fun canDefend(attackCard: Card, defenseCard: Card, trumpSuit: Suit): Boolean {
         if (defenseCard is Card.Joker) return true
         if (attackCard is Card.Joker) return false
         val attack = attackCard as Card.SuitedCard
         val defense = defenseCard as Card.SuitedCard
         return when {
-            defense.suit == Suit.SPADES && attack.suit != Suit.SPADES -> true
+            defense.suit == trumpSuit && attack.suit != trumpSuit -> true
             defense.suit == attack.suit && defense.rank.ordinal > attack.rank.ordinal -> true
             else -> false
         }
@@ -39,8 +39,8 @@ object GameEngine {
         val existingRanks = getTableRanks(state)
         val throwRanks = cards.filterIsInstance<Card.SuitedCard>().map { it.rank }.toSet()
         if (!throwRanks.all { it in existingRanks }) return "Thrown cards must match a rank on the table"
-        val newUndefendedTotal = state.undefendedSlots.size + cards.size
-        if (newUndefendedTotal > state.defender.hand.size) return "Too many cards (defender has ${state.defender.hand.size} cards)"
+        val newTotal = state.tableSlots.size + cards.size
+        if (newTotal > state.defenderStartingHandCount) return "Too many cards (defender had ${state.defenderStartingHandCount} cards at start of turn)"
         return null
     }
 
@@ -56,6 +56,7 @@ object GameEngine {
             phase = GamePhase.THROW_IN_PHASE,
             attackerPassedThrowIn = false,
             otherPassedThrowIn = false,
+            defenderStartingHandCount = state.defender.hand.size,
             message = "${state.defender.name} must defend"
         )
     }
@@ -209,8 +210,8 @@ object GameEngine {
         if (!attacker.hand.all { it is Card.Joker }) return state
         if (state.discardPile.isEmpty()) return state
 
-        val toDraw = state.discardPile.takeLast(3)
-        val newDiscard = state.discardPile.dropLast(toDraw.size)
+        val toDraw = state.discardPile.shuffled().take(3)
+        val newDiscard = state.discardPile.filter { it !in toDraw }
         val updatedPlayers = state.players.toMutableList()
         val p = updatedPlayers[state.attackerIndex]
         updatedPlayers[state.attackerIndex] = p.copy(hand = p.hand + toDraw)

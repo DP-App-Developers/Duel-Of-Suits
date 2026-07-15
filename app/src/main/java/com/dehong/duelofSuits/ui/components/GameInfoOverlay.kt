@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dehong.duelofSuits.model.GamePhase
 import com.dehong.duelofSuits.model.GameState
+import com.dehong.duelofSuits.model.Suit
 import com.dehong.duelofSuits.ui.theme.ActionGreen
 import com.dehong.duelofSuits.ui.theme.CounterBackground
 import com.dehong.duelofSuits.ui.theme.DangerRed
@@ -120,15 +121,21 @@ fun GameInfoOverlay(
 }
 
 @Composable
-fun TrumpIndicator(modifier: Modifier = Modifier) {
+fun TrumpIndicator(trumpSuit: Suit, modifier: Modifier = Modifier) {
+    val (symbol, textColor) = when (trumpSuit) {
+        Suit.HEARTS -> "♥" to Color(0xFFFF5252)
+        Suit.DIAMONDS -> "♦" to Color(0xFFFF5252)
+        Suit.CLUBS -> "♣" to Color.White
+        Suit.SPADES -> "♠" to Color.White
+    }
     Box(
         modifier = modifier
             .background(Color(0xFF311B92), RoundedCornerShape(4.dp))
             .padding(horizontal = 6.dp, vertical = 3.dp)
     ) {
         Text(
-            text = "♠ TRUMP",
-            color = SelectedBorder,
+            text = "$symbol TRUMP",
+            color = textColor,
             fontSize = 10.sp,
             fontWeight = FontWeight.ExtraBold,
             letterSpacing = 1.sp

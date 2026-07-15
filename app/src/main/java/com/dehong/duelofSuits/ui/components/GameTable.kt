@@ -94,7 +94,7 @@ private fun TableSlotView(
     val selectedHandCard = state.selectedHandCardForDefense
     val canDefendThisSlot = isHumanDefender && slot.defenseCard == null &&
             selectedHandCard != null &&
-            GameEngine.canDefend(slot.attackCard, selectedHandCard)
+            GameEngine.canDefend(slot.attackCard, selectedHandCard, state.trumpSuit)
 
     Box(
         modifier = Modifier.size(CARD_WIDTH + DEFENSE_X, CARD_HEIGHT + DEFENSE_Y)

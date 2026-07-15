@@ -10,6 +10,7 @@ import com.dehong.duelofSuits.model.Deck
 import com.dehong.duelofSuits.model.GamePhase
 import com.dehong.duelofSuits.model.GameState
 import com.dehong.duelofSuits.model.Player
+import com.dehong.duelofSuits.model.Suit
 import com.dehong.duelofSuits.ui.animation.AnimationEvent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -61,6 +62,10 @@ class GameViewModel : ViewModel() {
             val hands = List(3) { deck.drop(it * 8).take(8) }
             val drawPile = deck.drop(24)
 
+            // Bottom card of draw pile determines trump suit for the game
+            val trumpCard = drawPile.lastOrNull()
+            val trumpSuit = (trumpCard as? Card.SuitedCard)?.suit ?: Suit.SPADES
+
             val players = listOf(
                 Player(id = 0, name = "You", isHuman = true, hand = hands[0]),
                 Player(id = 1, name = "Alex", isHuman = false, hand = hands[1]),
@@ -95,7 +100,9 @@ class GameViewModel : ViewModel() {
                 defenderIndex = defenderIdx,
                 selectedCards = emptySet(),
                 selectedHandCardForDefense = null,
-                message = "${players[attackerIdx].name} attacks!"
+                message = "${players[attackerIdx].name} attacks!",
+                trumpSuit = trumpSuit,
+                trumpCard = trumpCard
             )
 
             checkAndRunAiTurn()
@@ -115,7 +122,8 @@ class GameViewModel : ViewModel() {
         if (!state.isHumanTurn) return
 
         when (state.phase) {
-            GamePhase.ATTACK_PHASE, GamePhase.THROW_IN_PHASE -> handleCardSelectionForAttack(card, state)
+            GamePhase.ATTACK_PHASE -> handleCardSelectionForAttack(card, state)
+            GamePhase.THROW_IN_PHASE -> handleCardSelectionForThrowIn(card, state)
             GamePhase.DEFENSE_PHASE -> handleCardSelectionForDefense(card, state)
             else -> {}
         }
@@ -140,13 +148,29 @@ class GameViewModel : ViewModel() {
         _gameState.value = state.copy(selectedCards = selected)
     }
 
+    private fun handleCardSelectionForThrowIn(card: Card, state: GameState) {
+        if (card is Card.Joker) {
+            _errorMessage.value = "Jokers cannot be thrown in"
+            return
+        }
+        val rank = (card as? Card.SuitedCard)?.rank
+        val tableRanks = GameEngine.getTableRanks(state)
+        if (rank == null || rank !in tableRanks) {
+            _errorMessage.value = "Card must match a rank already on the table"
+            return
+        }
+        val selected = state.selectedCards.toMutableSet()
+        if (card in selected) selected.remove(card) else selected.add(card)
+        _gameState.value = state.copy(selectedCards = selected)
+    }
+
     private fun handleCardSelectionForDefense(card: Card, state: GameState) {
         if (state.selectedHandCardForDefense == card) {
             _gameState.value = state.copy(selectedHandCardForDefense = null)
             return
         }
         val validSlots = state.tableSlots.filter { slot ->
-            slot.defenseCard == null && GameEngine.canDefend(slot.attackCard, card)
+            slot.defenseCard == null && GameEngine.canDefend(slot.attackCard, card, state.trumpSuit)
         }
         if (validSlots.isEmpty()) {
             _errorMessage.value = "This card cannot defend any attack card"
@@ -168,7 +192,7 @@ class GameViewModel : ViewModel() {
         val selectedCard = state.selectedHandCardForDefense ?: return
         val slot = state.tableSlots.getOrNull(slotIndex) ?: return
         if (slot.defenseCard != null) return
-        if (!GameEngine.canDefend(slot.attackCard, selectedCard)) {
+        if (!GameEngine.canDefend(slot.attackCard, selectedCard, state.trumpSuit)) {
             _errorMessage.value = "This card cannot beat that attack"
             return
         }
@@ -339,7 +363,7 @@ class GameViewModel : ViewModel() {
     }
 
     private suspend fun runAiThrowIn(state: GameState) {
-        val nonDefenders = listOf(state.attackerIndex, state.otherIndex).filter { it != 0 }
+        val nonDefenders = listOf(state.otherIndex, state.attackerIndex).filter { it != 0 }
         for (playerIdx in nonDefenders) {
             val currentState = _gameState.value
             if (currentState.phase != GamePhase.THROW_IN_PHASE) break
@@ -349,11 +373,7 @@ class GameViewModel : ViewModel() {
             val humanAttackerPassed = currentState.attackerIndex == 0 && currentState.attackerPassedThrowIn
             val humanOtherPassed = currentState.otherIndex == 0 && currentState.otherPassedThrowIn
 
-            val cards = AiPlayer.decideThrowIn(
-                currentState.players[playerIdx].hand,
-                currentState.tableSlots,
-                currentState.defender.hand.size
-            )
+            val cards = AiPlayer.decideThrowInFromState(currentState, playerIdx)
             if (cards.isEmpty()) {
                 val newState = GameEngine.processPass(playerIdx, currentState)
                 _gameState.value = newState
@@ -438,7 +458,22 @@ class GameViewModel : ViewModel() {
         val allCards = state.tableSlots.flatMap { listOfNotNull(it.attackCard, it.defenseCard) }
         _animationEvents.emit(AnimationEvent.TableToPlayer(state.defenderIndex, allCards))
         delay(500L)
-        val newState = GameEngine.resolveFailedDefense(state)
+        var newState = GameEngine.resolveFailedDefense(state)
+
+        // Replenish after failed defense: starting with old attacker, draw clockwise
+        val drawOrder = listOf(state.attackerIndex, state.defenderIndex, state.otherIndex)
+        var drawPile = newState.drawPile
+        val players = newState.players.toMutableList()
+        for (idx in drawOrder) {
+            val player = players[idx]
+            val needed = (8 - player.hand.size).coerceAtLeast(0)
+            if (needed > 0 && drawPile.isNotEmpty()) {
+                val drawn = drawPile.take(needed)
+                drawPile = drawPile.drop(drawn.size)
+                players[idx] = player.copy(hand = player.hand + drawn)
+            }
+        }
+        newState = newState.copy(players = players, drawPile = drawPile)
 
         val winner = GameEngine.checkWinner(newState)
         if (winner != null) {
@@ -512,7 +547,7 @@ class GameViewModel : ViewModel() {
                     card == state.selectedHandCardForDefense -> CardSelectionState.SELECTED
                     else -> {
                         val hasValidSlot = state.tableSlots.any { slot ->
-                            slot.defenseCard == null && GameEngine.canDefend(slot.attackCard, card)
+                            slot.defenseCard == null && GameEngine.canDefend(slot.attackCard, card, state.trumpSuit)
                         }
                         if (hasValidSlot) CardSelectionState.HIGHLIGHTED else CardSelectionState.DISABLED
                     }

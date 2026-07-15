@@ -61,6 +61,7 @@ import com.dehong.duelofSuits.ui.components.DrawPile
 import com.dehong.duelofSuits.ui.components.GameInfoOverlay
 import com.dehong.duelofSuits.ui.components.GameTable
 import com.dehong.duelofSuits.ui.components.PlayerHand
+import com.dehong.duelofSuits.ui.components.TrumpIndicator
 import com.dehong.duelofSuits.ui.theme.ActionGreen
 import com.dehong.duelofSuits.ui.theme.DangerRed
 import com.dehong.duelofSuits.ui.theme.TableGreen
@@ -164,8 +165,10 @@ private fun GameLayout(
             ) {
                 DrawPile(
                     count = state.drawPileCount,
-                    registry = registry
+                    registry = registry,
+                    trumpCard = state.trumpCard
                 )
+                TrumpIndicator(trumpSuit = state.trumpSuit)
 
                 Box(modifier = if (state.tableClearing) Modifier.alpha(tableAlpha.value) else Modifier) {
                     GameTable(
