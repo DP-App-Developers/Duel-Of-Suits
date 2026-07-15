@@ -95,7 +95,10 @@ fun PlayerHand(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .offset { IntOffset(0, (CARD_HEIGHT * 0.2f).roundToPx()) },
+                    .offset { IntOffset(0, (CARD_HEIGHT * 0.2f).roundToPx()) }
+                    .onGloballyPositioned { coords ->
+                        registry.register(PositionKey.PlayerArea(player.id), coords)
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Row(

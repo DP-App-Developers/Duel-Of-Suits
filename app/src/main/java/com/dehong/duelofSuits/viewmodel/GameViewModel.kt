@@ -75,6 +75,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             val defenderIdx = (attackerIdx + 1) % playerCount
 
             val totalCards = playerCount * 8
+            delay(400L) // wait for UI layout pass so player area positions are registered
             for (i in 0 until totalCards) {
                 val playerIdx = i % playerCount
                 val cardIdx = i / playerCount
