@@ -54,8 +54,7 @@ object GameEngine {
             tableSlots = newSlots,
             selectedCards = emptySet(),
             phase = GamePhase.THROW_IN_PHASE,
-            attackerPassedThrowIn = false,
-            otherPassedThrowIn = false,
+            throwInPassedIndices = emptySet(),
             defenderStartingHandCount = state.defender.hand.size,
             message = "${state.defender.name} must defend"
         )
@@ -66,42 +65,37 @@ object GameEngine {
         val updatedPlayers = state.players.toMutableList()
         val player = updatedPlayers[playerIndex]
         updatedPlayers[playerIndex] = player.copy(hand = player.hand - cards.toSet())
-        return state.copy(
+        val newPassed = state.throwInPassedIndices + playerIndex
+        val newState = state.copy(
             players = updatedPlayers,
             tableSlots = newSlots,
             selectedCards = emptySet(),
-            attackerPassedThrowIn = false,
-            otherPassedThrowIn = false,
+            throwInPassedIndices = newPassed,
             message = "${state.defender.name} must defend ${newSlots.size} card(s)"
         )
+        return checkThrowInEnd(newState)
     }
 
     fun processPass(playerIndex: Int, state: GameState): GameState {
-        val isAttacker = playerIndex == state.attackerIndex
-        val newState = if (isAttacker) {
-            state.copy(attackerPassedThrowIn = true)
-        } else {
-            state.copy(otherPassedThrowIn = true)
-        }
+        val newPassed = state.throwInPassedIndices + playerIndex
+        val newState = state.copy(throwInPassedIndices = newPassed)
         return checkThrowInEnd(newState)
     }
 
     private fun checkThrowInEnd(state: GameState): GameState {
-        if (!state.attackerPassedThrowIn || !state.otherPassedThrowIn) return state
-        // All slots already defended → both non-defenders passing means the turn is over
-        return if (state.allSlotsDefended) {
+        val nonDefenders = state.nonDefenderIndices
+        if (!nonDefenders.all { it in state.throwInPassedIndices }) return state
+        return if (state.tableSlots.any { it.defenseCard == null }) {
             state.copy(
-                phase = GamePhase.REPLENISH_PHASE,
-                attackerPassedThrowIn = false,
-                otherPassedThrowIn = false,
-                message = "Defense successful!"
+                phase = GamePhase.DEFENSE_PHASE,
+                throwInPassedIndices = emptySet(),
+                message = "${state.defender.name} is defending"
             )
         } else {
             state.copy(
-                phase = GamePhase.DEFENSE_PHASE,
-                attackerPassedThrowIn = false,
-                otherPassedThrowIn = false,
-                message = "${state.defender.name} is defending"
+                phase = GamePhase.REPLENISH_PHASE,
+                throwInPassedIndices = emptySet(),
+                message = "Defense successful!"
             )
         }
     }
@@ -151,8 +145,8 @@ object GameEngine {
             hand = defender.hand + allTableCards,
             skipNextAttack = true
         )
-        val nextAttackerIdx = state.otherIndex
-        val nextDefenderIdx = (nextAttackerIdx + 1) % 3
+        val candidateNextAttacker = (state.defenderIndex + 1) % state.playerCount
+        val (nextAttackerIdx, nextDefenderIdx) = resolveNextRoles(updatedPlayers.toList(), candidateNextAttacker, state.playerCount)
         return state.copy(
             players = updatedPlayers,
             tableSlots = emptyList(),
@@ -161,12 +155,13 @@ object GameEngine {
             defenderIndex = nextDefenderIdx,
             selectedCards = emptySet(),
             selectedHandCardForDefense = null,
+            throwInPassedIndices = emptySet(),
             message = "${defender.name} takes all cards. ${updatedPlayers[nextAttackerIdx].name} attacks!"
         )
     }
 
     fun replenish(state: GameState): GameState {
-        val order = listOf(state.attackerIndex, state.defenderIndex, state.otherIndex)
+        val order = (0 until state.playerCount).map { (state.attackerIndex + it) % state.playerCount }
         var drawPile = state.drawPile
         val players = state.players.toMutableList()
 
@@ -180,7 +175,7 @@ object GameEngine {
             }
         }
 
-        val (nextAttackerIdx, nextDefenderIdx) = resolveNextRoles(players, state.defenderIndex)
+        val (nextAttackerIdx, nextDefenderIdx) = resolveNextRoles(players, state.defenderIndex, state.playerCount)
 
         return state.copy(
             players = players,
@@ -192,14 +187,16 @@ object GameEngine {
         )
     }
 
-    private fun resolveNextRoles(players: List<Player>, candidateAttackerIdx: Int): Pair<Int, Int> {
+    private fun resolveNextRoles(players: List<Player>, candidateAttackerIdx: Int, playerCount: Int): Pair<Int, Int> {
         val mutablePlayers = players.toMutableList()
         var attackerIdx = candidateAttackerIdx
-        if (mutablePlayers[attackerIdx].skipNextAttack) {
+        var checked = 0
+        while (mutablePlayers[attackerIdx].skipNextAttack && checked < playerCount) {
             mutablePlayers[attackerIdx] = mutablePlayers[attackerIdx].copy(skipNextAttack = false)
-            attackerIdx = (attackerIdx + 1) % 3
+            attackerIdx = (attackerIdx + 1) % playerCount
+            checked++
         }
-        val defenderIdx = (attackerIdx + 1) % 3
+        val defenderIdx = (attackerIdx + 1) % playerCount
         return Pair(attackerIdx, defenderIdx)
     }
 

@@ -71,7 +71,7 @@ fun GameInfoOverlay(
                     }
                 }
 
-                state.phase == GamePhase.THROW_IN_PHASE && (state.isHumanAttacker || state.isHumanOther) -> {
+                state.phase == GamePhase.THROW_IN_PHASE && state.isHumanTurn -> {
                     AnimatedVisibility(
                         visible = state.selectedCards.isNotEmpty(),
                         enter = fadeIn(),

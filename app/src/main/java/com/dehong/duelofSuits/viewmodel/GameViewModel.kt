@@ -1,6 +1,7 @@
 package com.dehong.duelofSuits.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.dehong.duelofSuits.game.AiPlayer
 import com.dehong.duelofSuits.game.GameEngine
@@ -21,7 +22,9 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class GameViewModel : ViewModel() {
+private val PLAYER_NAMES = listOf("You", "Alex", "Sam", "Ryan")
+
+class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
 
     private val _gameState = MutableStateFlow(createInitialState())
     val gameState: StateFlow<GameState> = _gameState.asStateFlow()
@@ -37,17 +40,16 @@ class GameViewModel : ViewModel() {
     }
 
     private fun createInitialState(): GameState {
-        val players = listOf(
-            Player(id = 0, name = "You", isHuman = true),
-            Player(id = 1, name = "Alex", isHuman = false),
-            Player(id = 2, name = "Sam", isHuman = false)
-        )
+        val players = (0 until playerCount).map { i ->
+            Player(id = i, name = PLAYER_NAMES[i], isHuman = i == 0)
+        }
         return GameState(
             players = players,
             drawPile = emptyList(),
             discardPile = emptyList(),
             tableSlots = emptyList(),
             phase = GamePhase.DEALING,
+            playerCount = playerCount,
             attackerIndex = 0,
             defenderIndex = 1,
             selectedCards = emptySet(),
@@ -59,25 +61,23 @@ class GameViewModel : ViewModel() {
     private fun startGame() {
         viewModelScope.launch {
             val deck = Deck.create()
-            val hands = List(3) { deck.drop(it * 8).take(8) }
-            val drawPile = deck.drop(24)
+            val hands = List(playerCount) { deck.drop(it * 8).take(8) }
+            val drawPile = deck.drop(playerCount * 8)
 
-            // Bottom card of draw pile determines trump suit for the game
             val trumpCard = drawPile.lastOrNull()
             val trumpSuit = (trumpCard as? Card.SuitedCard)?.suit ?: Suit.SPADES
 
-            val players = listOf(
-                Player(id = 0, name = "You", isHuman = true, hand = hands[0]),
-                Player(id = 1, name = "Alex", isHuman = false, hand = hands[1]),
-                Player(id = 2, name = "Sam", isHuman = false, hand = hands[2])
-            )
+            val players = (0 until playerCount).map { i ->
+                Player(id = i, name = PLAYER_NAMES[i], isHuman = i == 0, hand = hands[i])
+            }
 
-            val attackerIdx = (0..2).random()
-            val defenderIdx = (attackerIdx + 1) % 3
+            val attackerIdx = (0 until playerCount).random()
+            val defenderIdx = (attackerIdx + 1) % playerCount
 
-            for (i in 0 until 24) {
-                val playerIdx = i % 3
-                val cardIdx = i / 3
+            val totalCards = playerCount * 8
+            for (i in 0 until totalCards) {
+                val playerIdx = i % playerCount
+                val cardIdx = i / playerCount
                 _animationEvents.emit(
                     AnimationEvent.DealCard(
                         card = hands[playerIdx][cardIdx],
@@ -88,7 +88,7 @@ class GameViewModel : ViewModel() {
                 )
             }
 
-            delay(24 * 60L + 400L)
+            delay(totalCards * 60L + 400L)
 
             _gameState.value = GameState(
                 players = players,
@@ -96,6 +96,7 @@ class GameViewModel : ViewModel() {
                 discardPile = emptyList(),
                 tableSlots = emptyList(),
                 phase = GamePhase.ATTACK_PHASE,
+                playerCount = playerCount,
                 attackerIndex = attackerIdx,
                 defenderIndex = defenderIdx,
                 selectedCards = emptySet(),
@@ -213,9 +214,7 @@ class GameViewModel : ViewModel() {
                 if (error != null) { _errorMessage.value = error; return }
                 viewModelScope.launch {
                     val newState = GameEngine.processAttack(selected, 0, state)
-                    // Update state first so the new AttackSlot is registered in the position registry
-                    // before the animation tries to look it up.
-                    _gameState.value = newState.copy(attackerPassedThrowIn = true)
+                    _gameState.value = newState
                     delay(50L)
                     emitPlayCardAnimations(selected, 0, state.tableSlots.size)
                     delay(300L * selected.size)
@@ -223,19 +222,11 @@ class GameViewModel : ViewModel() {
                 }
             }
             GamePhase.THROW_IN_PHASE -> {
-                val isHumanAttacker = state.attackerIndex == 0
-                val isHumanOther = state.otherIndex == 0
-                if (!isHumanAttacker && !isHumanOther) return
+                if (state.defenderIndex == 0) return
                 val error = GameEngine.validateThrowIn(selected, state)
                 if (error != null) { _errorMessage.value = error; return }
                 viewModelScope.launch {
-                    var newState = GameEngine.processThrowIn(selected, 0, state)
-                    // Auto-pass the human after throwing in — no need to press Pass.
-                    newState = if (isHumanAttacker) {
-                        newState.copy(attackerPassedThrowIn = true)
-                    } else {
-                        newState.copy(otherPassedThrowIn = true)
-                    }
+                    val newState = GameEngine.processThrowIn(selected, 0, state)
                     _gameState.value = newState
                     delay(50L)
                     emitPlayCardAnimations(selected, 0, state.tableSlots.size)
@@ -252,8 +243,7 @@ class GameViewModel : ViewModel() {
         if (state.animating || !state.isHumanTurn) return
         if (state.phase != GamePhase.THROW_IN_PHASE) return
 
-        val playerIdx = if (state.attackerIndex == 0) 0 else if (state.otherIndex == 0) 0 else return
-        val newState = GameEngine.processPass(playerIdx, state)
+        val newState = GameEngine.processPass(0, state)
         _gameState.value = newState.copy(selectedCards = emptySet())
         checkAndRunAiTurn()
     }
@@ -262,11 +252,9 @@ class GameViewModel : ViewModel() {
         val state = _gameState.value
         if (state.animating || !state.isHumanDefender) return
         if (!state.allSlotsDefended) { _errorMessage.value = "Defend all cards first"; return }
-        // Return to throw-in phase so non-defenders can add more cards before the turn ends.
         _gameState.value = state.copy(
             phase = GamePhase.THROW_IN_PHASE,
-            attackerPassedThrowIn = false,
-            otherPassedThrowIn = false,
+            throwInPassedIndices = emptySet(),
             message = "Defended! Throw in more cards or pass"
         )
         checkAndRunAiTurn()
@@ -292,10 +280,9 @@ class GameViewModel : ViewModel() {
 
         when (state.phase) {
             GamePhase.THROW_IN_PHASE -> {
-                // Both non-defenders act independently; check pass flags to see if any AI still needs to act.
-                val aiAttackerPending = state.attackerIndex != 0 && !state.attackerPassedThrowIn
-                val aiOtherPending = state.otherIndex != 0 && !state.otherPassedThrowIn
-                if (aiAttackerPending || aiOtherPending) {
+                val aiNonDefendersPending = state.nonDefenderIndices
+                    .filter { it != 0 && it !in state.throwInPassedIndices }
+                if (aiNonDefendersPending.isNotEmpty()) {
                     viewModelScope.launch {
                         delay(800L)
                         runAiThrowIn(_gameState.value)
@@ -303,7 +290,6 @@ class GameViewModel : ViewModel() {
                 }
             }
             GamePhase.REPLENISH_PHASE -> {
-                // Both non-defenders passed in THROW_IN_PHASE with all slots defended → success.
                 viewModelScope.launch {
                     resolveSuccessfulDefenseFlow(_gameState.value)
                 }
@@ -363,25 +349,22 @@ class GameViewModel : ViewModel() {
     }
 
     private suspend fun runAiThrowIn(state: GameState) {
-        val nonDefenders = listOf(state.otherIndex, state.attackerIndex).filter { it != 0 }
-        for (playerIdx in nonDefenders) {
+        // others act before attacker; all must be AI players not yet passed
+        val orderedAiNonDefenders = (state.otherIndices + listOf(state.attackerIndex))
+            .filter { it != 0 }
+
+        for (playerIdx in orderedAiNonDefenders) {
             val currentState = _gameState.value
             if (currentState.phase != GamePhase.THROW_IN_PHASE) break
             if (currentState.animating) break
-
-            // Snapshot human's pass state before AI may reset it via processThrowIn.
-            val humanAttackerPassed = currentState.attackerIndex == 0 && currentState.attackerPassedThrowIn
-            val humanOtherPassed = currentState.otherIndex == 0 && currentState.otherPassedThrowIn
+            if (playerIdx in currentState.throwInPassedIndices) continue
 
             val cards = AiPlayer.decideThrowInFromState(currentState, playerIdx)
             if (cards.isEmpty()) {
                 val newState = GameEngine.processPass(playerIdx, currentState)
                 _gameState.value = newState
             } else {
-                var newState = GameEngine.processThrowIn(cards, playerIdx, currentState)
-                // Restore human's implicit pass — processThrowIn resets both flags.
-                if (humanAttackerPassed) newState = newState.copy(attackerPassedThrowIn = true)
-                if (humanOtherPassed) newState = newState.copy(otherPassedThrowIn = true)
+                val newState = GameEngine.processThrowIn(cards, playerIdx, currentState)
                 _gameState.value = newState
                 delay(50L)
                 emitPlayCardAnimations(cards, playerIdx, currentState.tableSlots.size)
@@ -416,24 +399,20 @@ class GameViewModel : ViewModel() {
             _gameState.value = currentState
         }
 
-        // Return to throw-in phase so non-defenders can add more cards or pass.
-        // Resolution only happens when both non-defenders pass with all slots defended.
         delay(500L)
         _gameState.value = currentState.copy(
             phase = GamePhase.THROW_IN_PHASE,
-            attackerPassedThrowIn = false,
-            otherPassedThrowIn = false,
+            throwInPassedIndices = emptySet(),
             message = "Defended! Throw in more cards or pass"
         )
         checkAndRunAiTurn()
     }
 
     private suspend fun resolveSuccessfulDefenseFlow(state: GameState) {
-        // Signal the UI to start fading the table cards — slots are still in state so they render
         _gameState.value = state.copy(tableClearing = true)
-        delay(750L)  // Wait for the 700ms fade to finish
+        delay(750L)
         val resolvedState = GameEngine.resolveSuccessfulDefense(state)
-        _gameState.value = resolvedState  // tableClearing defaults to false
+        _gameState.value = resolvedState
 
         val replenishedState = GameEngine.replenish(resolvedState)
         val winner = GameEngine.checkWinner(replenishedState)
@@ -460,8 +439,8 @@ class GameViewModel : ViewModel() {
         delay(500L)
         var newState = GameEngine.resolveFailedDefense(state)
 
-        // Replenish after failed defense: starting with old attacker, draw clockwise
-        val drawOrder = listOf(state.attackerIndex, state.defenderIndex, state.otherIndex)
+        // Replenish after failed defense: draw in clockwise order from old attacker
+        val drawOrder = (0 until state.playerCount).map { (state.attackerIndex + it) % state.playerCount }
         var drawPile = newState.drawPile
         val players = newState.players.toMutableList()
         for (idx in drawOrder) {
@@ -555,5 +534,12 @@ class GameViewModel : ViewModel() {
             }
             else -> CardSelectionState.NORMAL
         }
+    }
+}
+
+class GameViewModelFactory(private val playerCount: Int) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return GameViewModel(playerCount) as T
     }
 }

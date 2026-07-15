@@ -3,15 +3,16 @@ package com.dehong.duelofSuits.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -90,34 +91,39 @@ fun AiPlayerArea(
         }
 
         val faceDownCards = minOf(player.hand.size, 5)
-        if (faceDownCards > 0) {
-            Box(
-                modifier = Modifier
-                    .padding(top = 6.dp)
-                    .size((CARD_WIDTH.value + (faceDownCards - 1) * 6).dp, CARD_HEIGHT)
-                    .onGloballyPositioned { coords ->
-                        registry.register(PositionKey.PlayerArea(player.id), coords)
+        Box(
+            modifier = Modifier
+                .padding(top = 6.dp)
+                .border(2.dp, roleColor.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
+                .padding(8.dp)
+        ) {
+            if (faceDownCards > 0) {
+                Box(
+                    modifier = Modifier
+                        .size((CARD_WIDTH.value + (faceDownCards - 1) * 6).dp, CARD_HEIGHT)
+                        .onGloballyPositioned { coords ->
+                            registry.register(PositionKey.PlayerArea(player.id), coords)
+                        }
+                ) {
+                    repeat(faceDownCards) { idx ->
+                        CardView(
+                            card = Card.SuitedCard(Suit.SPADES, Rank.ACE),
+                            faceDown = true,
+                            modifier = Modifier
+                                .offset { IntOffset(idx * 6, 0) }
+                                .size(CARD_WIDTH, CARD_HEIGHT)
+                        )
                     }
-            ) {
-                repeat(faceDownCards) { idx ->
-                    CardView(
-                        card = Card.SuitedCard(Suit.SPADES, Rank.ACE),
-                        faceDown = true,
-                        modifier = Modifier
-                            .offset { IntOffset(idx * 6, 0) }
-                            .size(CARD_WIDTH, CARD_HEIGHT)
-                    )
                 }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(CARD_WIDTH, CARD_HEIGHT)
+                        .onGloballyPositioned { coords ->
+                            registry.register(PositionKey.PlayerArea(player.id), coords)
+                        }
+                )
             }
-        } else {
-            Box(
-                modifier = Modifier
-                    .padding(top = 6.dp)
-                    .size(CARD_WIDTH, CARD_HEIGHT)
-                    .onGloballyPositioned { coords ->
-                        registry.register(PositionKey.PlayerArea(player.id), coords)
-                    }
-            )
         }
 
         if (state.phase != GamePhase.GAME_OVER) {
@@ -125,6 +131,115 @@ fun AiPlayerArea(
                 isAttacker -> "ATTACKING"
                 isDefender -> "DEFENDING"
                 else -> "WATCHING"
+            }
+            Text(
+                text = roleLabel,
+                color = roleColor.copy(alpha = 0.8f),
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.8.sp,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+// Vertical AI area for the left-side player in 4-player mode.
+@Composable
+fun AiSideArea(
+    player: Player,
+    state: GameState,
+    registry: PositionRegistry,
+    modifier: Modifier = Modifier
+) {
+    val isDefender = state.defenderIndex == player.id
+    val isAttacker = state.attackerIndex == player.id
+
+    val roleColor by animateColorAsState(
+        targetValue = when {
+            isAttacker -> Color(0xFFFF8F00)
+            isDefender -> Color(0xFFB71C1C)
+            else -> ActionGreen
+        },
+        animationSpec = tween(300),
+        label = "aiSideRoleColor"
+    )
+
+    Column(
+        modifier = modifier
+            .fillMaxHeight()
+            .width(CARD_WIDTH + 36.dp)
+            .padding(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .background(roleColor, RoundedCornerShape(4.dp))
+                .padding(horizontal = 6.dp, vertical = 2.dp)
+        ) {
+            Text(
+                text = player.name,
+                color = Color.White,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .padding(top = 2.dp)
+                .background(CounterBackground, RoundedCornerShape(4.dp))
+                .padding(horizontal = 6.dp, vertical = 2.dp)
+        ) {
+            Text(
+                text = "${player.hand.size}",
+                color = TextOnDark,
+                fontSize = 10.sp
+            )
+        }
+
+        val faceDownCards = minOf(player.hand.size, 6)
+        Box(
+            modifier = Modifier
+                .padding(top = 6.dp)
+                .border(2.dp, roleColor.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
+                .padding(8.dp)
+        ) {
+            if (faceDownCards > 0) {
+                Box(
+                    modifier = Modifier
+                        .size(CARD_WIDTH, (CARD_HEIGHT.value + (faceDownCards - 1) * 8).dp)
+                        .onGloballyPositioned { coords ->
+                            registry.register(PositionKey.PlayerArea(player.id), coords)
+                        }
+                ) {
+                    repeat(faceDownCards) { idx ->
+                        CardView(
+                            card = Card.SuitedCard(Suit.SPADES, Rank.ACE),
+                            faceDown = true,
+                            modifier = Modifier
+                                .offset { IntOffset(0, idx * 8) }
+                                .size(CARD_WIDTH, CARD_HEIGHT)
+                        )
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(CARD_WIDTH, CARD_HEIGHT)
+                        .onGloballyPositioned { coords ->
+                            registry.register(PositionKey.PlayerArea(player.id), coords)
+                        }
+                )
+            }
+        }
+
+        if (state.phase != GamePhase.GAME_OVER) {
+            val roleLabel = when {
+                isAttacker -> "ATK"
+                isDefender -> "DEF"
+                else -> "WATCH"
             }
             Text(
                 text = roleLabel,

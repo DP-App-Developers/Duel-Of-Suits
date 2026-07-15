@@ -3,6 +3,7 @@ package com.dehong.duelofSuits.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -82,10 +83,20 @@ fun PlayerHand(
             modifier = Modifier.padding(bottom = 4.dp)
         )
 
+        val roleColor = when {
+            state.attackerIndex == player.id -> Color(0xFFFF8F00)
+            state.defenderIndex == player.id -> Color(0xFFB71C1C)
+            else -> ActionGreen
+        }
+
         val hand = sortedHand(player.hand)
 
         Box(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
+                .border(2.dp, roleColor.copy(alpha = 0.7f), RoundedCornerShape(10.dp))
+                .padding(8.dp),
             contentAlignment = Alignment.Center
         ) {
             Row(

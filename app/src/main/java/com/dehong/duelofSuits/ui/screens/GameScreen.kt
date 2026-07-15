@@ -43,7 +43,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dehong.duelofSuits.model.Card
 import com.dehong.duelofSuits.model.GamePhase
 import com.dehong.duelofSuits.model.GameState
@@ -54,6 +53,7 @@ import com.dehong.duelofSuits.ui.animation.FlyingCard
 import com.dehong.duelofSuits.ui.animation.PositionKey
 import com.dehong.duelofSuits.ui.animation.PositionRegistry
 import com.dehong.duelofSuits.ui.components.AiPlayerArea
+import com.dehong.duelofSuits.ui.components.AiSideArea
 import com.dehong.duelofSuits.ui.components.CardView
 import com.dehong.duelofSuits.ui.components.CARD_HEIGHT
 import com.dehong.duelofSuits.ui.components.CARD_WIDTH
@@ -73,7 +73,11 @@ import kotlin.math.roundToInt
 val LocalPositionRegistry = staticCompositionLocalOf { PositionRegistry() }
 
 @Composable
-fun GameScreen(viewModel: GameViewModel = viewModel()) {
+fun GameScreen(
+    playerCount: Int = 3,
+    onNavigateHome: () -> Unit = {},
+    viewModel: GameViewModel
+) {
     val state by viewModel.gameState.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val registry = remember { PositionRegistry() }
@@ -102,7 +106,11 @@ fun GameScreen(viewModel: GameViewModel = viewModel()) {
                 .navigationBarsPadding()
         ) {
             when (state.phase) {
-                GamePhase.GAME_OVER -> GameOverOverlay(state = state, onRestart = viewModel::restartGame)
+                GamePhase.GAME_OVER -> GameOverOverlay(
+                    state = state,
+                    onRestart = viewModel::restartGame,
+                    onHome = onNavigateHome
+                )
                 else -> GameLayout(
                     state = state,
                     registry = registry,
@@ -129,6 +137,22 @@ private fun GameLayout(
     registry: PositionRegistry,
     viewModel: GameViewModel
 ) {
+    when (state.playerCount) {
+        2 -> TwoPlayerLayout(state, registry, viewModel)
+        4 -> FourPlayerLayout(state, registry, viewModel)
+        else -> ThreePlayerLayout(state, registry, viewModel)
+    }
+}
+
+// ── Center panel (draw pile + table) shared across all layouts ──────────────
+
+@Composable
+private fun CenterPanel(
+    state: GameState,
+    registry: PositionRegistry,
+    viewModel: GameViewModel,
+    modifier: Modifier = Modifier
+) {
     val tableAlpha = remember { Animatable(1f) }
     LaunchedEffect(state.tableClearing) {
         if (state.tableClearing) {
@@ -139,6 +163,87 @@ private fun GameLayout(
         }
     }
 
+    Column(
+        modifier = modifier.padding(vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        DrawPile(
+            count = state.drawPileCount,
+            registry = registry,
+            trumpCard = state.trumpCard
+        )
+        TrumpIndicator(trumpSuit = state.trumpSuit)
+
+        Box(modifier = if (state.tableClearing) Modifier.alpha(tableAlpha.value) else Modifier) {
+            GameTable(
+                state = state,
+                registry = registry,
+                onDefenseSlotTapped = if (state.tableClearing) { _ -> } else viewModel::onDefenseSlotTapped
+            )
+        }
+    }
+}
+
+// ── 2-player layout ──────────────────────────────────────────────────────────
+
+@Composable
+private fun TwoPlayerLayout(
+    state: GameState,
+    registry: PositionRegistry,
+    viewModel: GameViewModel
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Top: single AI player centered
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(0.45f),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.Top
+        ) {
+            AiPlayerArea(
+                player = state.players[1],
+                state = state,
+                registry = registry,
+                modifier = Modifier.weight(0.35f).fillMaxHeight()
+            )
+            CenterPanel(
+                state = state,
+                registry = registry,
+                viewModel = viewModel,
+                modifier = Modifier.weight(0.65f).fillMaxHeight()
+            )
+        }
+
+        GameInfoOverlay(
+            state = state,
+            onPlaySelected = viewModel::onPlaySelectedPressed,
+            onPass = viewModel::onPassPressed,
+            onConfirmDefense = viewModel::onConfirmDefensePressed,
+            onTakeCards = viewModel::onTakeCardsPressed,
+            modifier = Modifier.fillMaxWidth().height(52.dp)
+        )
+
+        PlayerHand(
+            player = state.players[0],
+            state = state,
+            registry = registry,
+            onCardTapped = viewModel::onHumanCardTapped,
+            getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
+            modifier = Modifier.fillMaxWidth().weight(0.45f).padding(bottom = 6.dp)
+        )
+    }
+}
+
+// ── 3-player layout ──────────────────────────────────────────────────────────
+
+@Composable
+private fun ThreePlayerLayout(
+    state: GameState,
+    registry: PositionRegistry,
+    viewModel: GameViewModel
+) {
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
@@ -150,42 +255,21 @@ private fun GameLayout(
                 player = state.players[1],
                 state = state,
                 registry = registry,
-                modifier = Modifier
-                    .weight(0.22f)
-                    .fillMaxHeight()
+                modifier = Modifier.weight(0.22f).fillMaxHeight()
             )
 
-            Column(
-                modifier = Modifier
-                    .weight(0.56f)
-                    .fillMaxHeight()
-                    .padding(vertical = 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                DrawPile(
-                    count = state.drawPileCount,
-                    registry = registry,
-                    trumpCard = state.trumpCard
-                )
-                TrumpIndicator(trumpSuit = state.trumpSuit)
-
-                Box(modifier = if (state.tableClearing) Modifier.alpha(tableAlpha.value) else Modifier) {
-                    GameTable(
-                        state = state,
-                        registry = registry,
-                        onDefenseSlotTapped = if (state.tableClearing) { _ -> } else viewModel::onDefenseSlotTapped
-                    )
-                }
-            }
+            CenterPanel(
+                state = state,
+                registry = registry,
+                viewModel = viewModel,
+                modifier = Modifier.weight(0.56f).fillMaxHeight()
+            )
 
             AiPlayerArea(
                 player = state.players[2],
                 state = state,
                 registry = registry,
-                modifier = Modifier
-                    .weight(0.22f)
-                    .fillMaxHeight()
+                modifier = Modifier.weight(0.22f).fillMaxHeight()
             )
         }
 
@@ -195,9 +279,7 @@ private fun GameLayout(
             onPass = viewModel::onPassPressed,
             onConfirmDefense = viewModel::onConfirmDefensePressed,
             onTakeCards = viewModel::onTakeCardsPressed,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
+            modifier = Modifier.fillMaxWidth().height(52.dp)
         )
 
         PlayerHand(
@@ -206,13 +288,79 @@ private fun GameLayout(
             registry = registry,
             onCardTapped = viewModel::onHumanCardTapped,
             getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(0.38f)
-                .padding(bottom = 6.dp)
+            modifier = Modifier.fillMaxWidth().weight(0.38f).padding(bottom = 6.dp)
         )
     }
 }
+
+// ── 4-player layout ──────────────────────────────────────────────────────────
+
+@Composable
+private fun FourPlayerLayout(
+    state: GameState,
+    registry: PositionRegistry,
+    viewModel: GameViewModel
+) {
+    Row(modifier = Modifier.fillMaxSize()) {
+        // Left column: AI3 side area
+        AiSideArea(
+            player = state.players[3],
+            state = state,
+            registry = registry
+        )
+
+        // Main content area
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.52f),
+                verticalAlignment = Alignment.Top
+            ) {
+                AiPlayerArea(
+                    player = state.players[1],
+                    state = state,
+                    registry = registry,
+                    modifier = Modifier.weight(0.25f).fillMaxHeight()
+                )
+
+                CenterPanel(
+                    state = state,
+                    registry = registry,
+                    viewModel = viewModel,
+                    modifier = Modifier.weight(0.50f).fillMaxHeight()
+                )
+
+                AiPlayerArea(
+                    player = state.players[2],
+                    state = state,
+                    registry = registry,
+                    modifier = Modifier.weight(0.25f).fillMaxHeight()
+                )
+            }
+
+            GameInfoOverlay(
+                state = state,
+                onPlaySelected = viewModel::onPlaySelectedPressed,
+                onPass = viewModel::onPassPressed,
+                onConfirmDefense = viewModel::onConfirmDefensePressed,
+                onTakeCards = viewModel::onTakeCardsPressed,
+                modifier = Modifier.fillMaxWidth().height(52.dp)
+            )
+
+            PlayerHand(
+                player = state.players[0],
+                state = state,
+                registry = registry,
+                onCardTapped = viewModel::onHumanCardTapped,
+                getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
+                modifier = Modifier.fillMaxWidth().weight(0.38f).padding(bottom = 6.dp)
+            )
+        }
+    }
+}
+
+// ── Shared composables ───────────────────────────────────────────────────────
 
 @Composable
 private fun FlyingCardLayer(flyingCards: List<FlyingCard>) {
@@ -377,7 +525,7 @@ private suspend fun animateCard(
 
 
 @Composable
-private fun GameOverOverlay(state: GameState, onRestart: () -> Unit) {
+private fun GameOverOverlay(state: GameState, onRestart: () -> Unit, onHome: () -> Unit) {
     val winner = state.players.firstOrNull { it.id == state.winnerId }
     Box(
         modifier = Modifier
@@ -401,11 +549,19 @@ private fun GameOverOverlay(state: GameState, onRestart: () -> Unit) {
                 fontSize = 20.sp
             )
             Spacer(modifier = Modifier.height(12.dp))
-            Button(
-                onClick = onRestart,
-                colors = ButtonDefaults.buttonColors(containerColor = ActionGreen)
-            ) {
-                Text("Play Again", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Button(
+                    onClick = onRestart,
+                    colors = ButtonDefaults.buttonColors(containerColor = ActionGreen)
+                ) {
+                    Text("Play Again", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+                Button(
+                    onClick = onHome,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF455A64))
+                ) {
+                    Text("Home", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }
