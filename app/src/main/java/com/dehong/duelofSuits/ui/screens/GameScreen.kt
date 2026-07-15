@@ -7,6 +7,8 @@ import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,11 +22,13 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -61,9 +65,11 @@ import com.dehong.duelofSuits.ui.components.DrawPile
 import com.dehong.duelofSuits.ui.components.GameInfoOverlay
 import com.dehong.duelofSuits.ui.components.GameTable
 import com.dehong.duelofSuits.ui.components.PlayerHand
-import com.dehong.duelofSuits.ui.theme.ActionGreen
 import com.dehong.duelofSuits.ui.theme.DangerRed
+import com.dehong.duelofSuits.ui.theme.Gold
 import com.dehong.duelofSuits.ui.theme.TableGreen
+import com.dehong.duelofSuits.ui.theme.TableGreenLight
+import com.dehong.duelofSuits.ui.theme.TextOnDark
 import com.dehong.duelofSuits.viewmodel.GameViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -101,7 +107,21 @@ fun GameScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(TableGreen)
+                .background(Brush.radialGradient(listOf(TableGreenLight, TableGreen)))
+                .drawBehind {
+                    val lineColor = Color.Black.copy(alpha = 0.05f)
+                    val spacing = 5.dp.toPx()
+                    var x = -size.height
+                    while (x < size.width + size.height) {
+                        drawLine(lineColor, Offset(x, 0f), Offset(x + size.height, size.height), 0.7f)
+                        x += spacing
+                    }
+                    x = 0f
+                    while (x < size.width + size.height) {
+                        drawLine(lineColor, Offset(x, 0f), Offset(x - size.height, size.height), 0.7f)
+                        x += spacing
+                    }
+                }
                 .navigationBarsPadding()
         ) {
             when (state.phase) {
@@ -548,40 +568,84 @@ private suspend fun animateCard(
 @Composable
 private fun GameOverOverlay(state: GameState, onRestart: () -> Unit, onHome: () -> Unit) {
     val winner = state.players.firstOrNull { it.id == state.winnerId }
+    val humanWon = winner?.isHuman == true
+    val winnerName = winner?.name ?: "Someone"
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.75f)),
+            .background(Color.Black.copy(alpha = 0.82f)),
         contentAlignment = Alignment.Center
     ) {
         Column(
+            modifier = Modifier
+                .padding(horizontal = 32.dp)
+                .border(1.5.dp, Gold, RoundedCornerShape(16.dp))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFF0F2E1A), Color(0xFF050E08))
+                    ),
+                    RoundedCornerShape(16.dp)
+                )
+                .padding(horizontal = 40.dp, vertical = 36.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
-                text = if (winner?.isHuman == true) "🎉 You Win!" else "${winner?.name ?: "Someone"} Wins!",
-                color = if (winner?.isHuman == true) ActionGreen else DangerRed,
-                fontSize = 42.sp,
+                text = if (humanWon) "VICTORY" else "DEFEATED",
+                color = if (humanWon) Gold else DangerRed.copy(alpha = 0.9f),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 4.sp
+            )
+            Text(
+                text = winnerName,
+                color = if (humanWon) Gold else Color.White,
+                fontSize = 38.sp,
                 fontWeight = FontWeight.ExtraBold
             )
             Text(
-                text = if (winner?.isHuman == true) "Congratulations!" else "Better luck next time!",
-                color = Color.White,
-                fontSize = 20.sp
+                text = "wins the round",
+                color = TextOnDark.copy(alpha = 0.5f),
+                fontSize = 13.sp
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Button(
-                    onClick = onRestart,
-                    colors = ButtonDefaults.buttonColors(containerColor = ActionGreen)
+            Spacer(Modifier.height(20.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Play Again — gold accent button
+                Box(
+                    modifier = Modifier
+                        .border(1.5.dp, Gold, RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Gold.copy(alpha = 0.15f))
+                        .clickable { onRestart() }
+                        .padding(horizontal = 22.dp, vertical = 12.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text("Play Again", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "PLAY AGAIN",
+                        color = Gold,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
                 }
-                Button(
-                    onClick = onHome,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF455A64))
+                // Home — muted button
+                Box(
+                    modifier = Modifier
+                        .border(1.dp, TextOnDark.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.White.copy(alpha = 0.04f))
+                        .clickable { onHome() }
+                        .padding(horizontal = 22.dp, vertical = 12.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text("Home", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "HOME",
+                        color = TextOnDark.copy(alpha = 0.6f),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
                 }
             }
         }

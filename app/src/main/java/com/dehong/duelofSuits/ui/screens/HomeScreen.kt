@@ -1,7 +1,6 @@
 package com.dehong.duelofSuits.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,26 +10,47 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.dehong.duelofSuits.ui.theme.ActionGreen
+import com.dehong.duelofSuits.ui.theme.Gold
 import com.dehong.duelofSuits.ui.theme.TableGreen
 import com.dehong.duelofSuits.ui.theme.TableGreenLight
+import com.dehong.duelofSuits.ui.theme.TextOnDark
 
 @Composable
 fun HomeScreen(onStartGame: (Int) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(TableGreen),
+            .background(
+                Brush.radialGradient(listOf(TableGreenLight, TableGreen))
+            )
+            .drawBehind {
+                // Fine felt cross-hatch texture
+                val lineColor = Color.Black.copy(alpha = 0.05f)
+                val spacing = 5.dp.toPx()
+                var x = -size.height
+                while (x < size.width + size.height) {
+                    drawLine(lineColor, Offset(x, 0f), Offset(x + size.height, size.height), 0.7f)
+                    x += spacing
+                }
+                x = 0f
+                while (x < size.width + size.height) {
+                    drawLine(lineColor, Offset(x, 0f), Offset(x - size.height, size.height), 0.7f)
+                    x += spacing
+                }
+            },
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -38,25 +58,40 @@ fun HomeScreen(onStartGame: (Int) -> Unit) {
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             Text(
-                text = "Duel of Suits",
-                color = Color.White,
-                fontSize = 40.sp,
+                text = "DUEL OF SUITS",
+                color = Gold,
+                fontSize = 36.sp,
                 fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 3.sp
+            )
+
+            // Ornamental divider
+            Spacer(Modifier.height(10.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(Modifier.width(60.dp).height(1.dp).background(Gold.copy(alpha = 0.45f)))
+                Text("♦", color = Gold.copy(alpha = 0.7f), fontSize = 13.sp)
+                Box(Modifier.width(60.dp).height(1.dp).background(Gold.copy(alpha = 0.45f)))
+            }
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                text = "A GAME OF ATTACK AND DEFENSE",
+                color = TextOnDark.copy(alpha = 0.45f),
+                fontSize = 10.sp,
                 letterSpacing = 2.sp
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "A game of attack and defense",
-                color = Color.White.copy(alpha = 0.6f),
-                fontSize = 14.sp,
-                letterSpacing = 1.sp
-            )
-            Spacer(modifier = Modifier.height(48.dp))
+
+            Spacer(modifier = Modifier.height(52.dp))
+
             Text(
                 text = "Choose number of players",
-                color = Color.White.copy(alpha = 0.8f),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
+                color = TextOnDark.copy(alpha = 0.65f),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.5.sp
             )
             Spacer(modifier = Modifier.height(24.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -70,36 +105,63 @@ fun HomeScreen(onStartGame: (Int) -> Unit) {
 
 @Composable
 private fun PlayerCountButton(count: Int, onStartGame: (Int) -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+    Box(
         modifier = Modifier
-            .border(2.dp, ActionGreen, RoundedCornerShape(12.dp))
-            .background(TableGreenLight, RoundedCornerShape(12.dp))
+            .background(
+                Brush.verticalGradient(listOf(Color(0xFF1A5235), Color(0xFF0A2418))),
+                RoundedCornerShape(12.dp)
+            )
+            .drawBehind {
+                // Gold border
+                val stroke = 1.5.dp.toPx()
+                val r = 12.dp.toPx()
+                drawRoundRect(
+                    color = Gold.copy(alpha = 0.7f),
+                    topLeft = Offset(stroke / 2, stroke / 2),
+                    size = androidx.compose.ui.geometry.Size(
+                        size.width - stroke,
+                        size.height - stroke
+                    ),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(r),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke)
+                )
+            }
             .clickable { onStartGame(count) }
-            .padding(horizontal = 28.dp, vertical = 20.dp)
+            .padding(horizontal = 28.dp, vertical = 22.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "$count",
-            color = Color.White,
-            fontSize = 36.sp,
-            fontWeight = FontWeight.ExtraBold
-        )
-        Text(
-            text = if (count == 1) "Player" else "Players",
-            color = Color.White.copy(alpha = 0.8f),
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = when (count) {
-                2 -> "You vs 1 AI"
-                3 -> "You vs 2 AI"
-                else -> "You vs 3 AI"
-            },
-            color = ActionGreen,
-            fontSize = 11.sp
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(0.dp)
+        ) {
+            Text(
+                text = "$count",
+                color = Gold,
+                fontSize = 42.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+            // Thin gold rule
+            Spacer(Modifier.height(4.dp))
+            Box(Modifier.width(36.dp).height(1.dp).background(Gold.copy(alpha = 0.35f)))
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = if (count == 1) "Player" else "Players",
+                color = TextOnDark.copy(alpha = 0.8f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.5.sp
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = when (count) {
+                    2 -> "vs 1 AI"
+                    3 -> "vs 2 AI"
+                    else -> "vs 3 AI"
+                },
+                color = Gold.copy(alpha = 0.55f),
+                fontSize = 10.sp,
+                letterSpacing = 0.3.sp
+            )
+        }
     }
 }

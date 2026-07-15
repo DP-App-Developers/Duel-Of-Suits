@@ -2,18 +2,32 @@ package com.dehong.duelofSuits.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val TableGreen = Color(0xFF1B5E20)
-val TableGreenLight = Color(0xFF2E7D32)
-val CardRed = Color(0xFFCC0000)
-val CardBlack = Color(0xFF111111)
-val CardBackBlue = Color(0xFF1A237E)
-val CardBackBlueLight = Color(0xFF283593)
-val CardFace = Color(0xFFFFFFFF)
-val SelectedBorder = Color(0xFFFFEB3B)
-val ActionGreen = Color(0xFF388E3C)
-val DangerRed = Color(0xFFB71C1C)
-val TextOnDark = Color(0xFFE8F5E9)
-val CounterBackground = Color(0xCC000000)
-val HighlightCyan = Color(0xFF00BCD4)
-val HighlightCyanOverlay = Color(0x2200BCD4)
-val DisabledGray = Color(0x99000000)
+// Table surface
+val TableGreen      = Color(0xFF061C0D)   // near-black felt — outer areas
+val TableGreenLight = Color(0xFF0D3B1E)   // deep green — radial gradient center
+
+// Gold — primary luxury accent throughout the UI
+val Gold      = Color(0xFFC9A227)
+val GoldLight = Color(0xFFDDBB3A)
+
+// Cards
+val CardFace         = Color(0xFFFAF4E8)  // warm ivory face
+val CardRed          = Color(0xFFC41C1C)  // rich red for hearts/diamonds
+val CardBlack        = Color(0xFF161616)  // deep black for clubs/spades
+val CardBackBlue     = Color(0xFF1B1B38)  // deep navy back
+val CardBackBlueLight = Color(0xFF28284E) // navy accent for back pattern
+
+// Selection & highlight
+val SelectedBorder       = Color(0xFFFFD700)  // pure gold selection ring
+val HighlightCyan        = Color(0xFF26C6DA)
+val HighlightCyanOverlay = Color(0x2226C6DA)
+val DisabledGray         = Color(0x55000000)
+
+// UI panels and text
+val TextOnDark       = Color(0xFFF0E6D0)  // warm cream
+val CounterBackground = Color(0xEE080808) // near-black panel
+val PanelDark        = Color(0xF0040D07)  // very dark overlay panels
+
+// Action colors
+val ActionGreen = Color(0xFF2D7A4A)  // rich green (confirm / support)
+val DangerRed   = Color(0xFFB71C1C)  // deep red (take cards / danger)
