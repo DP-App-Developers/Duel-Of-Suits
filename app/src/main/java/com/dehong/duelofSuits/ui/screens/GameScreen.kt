@@ -61,7 +61,6 @@ import com.dehong.duelofSuits.ui.components.DrawPile
 import com.dehong.duelofSuits.ui.components.GameInfoOverlay
 import com.dehong.duelofSuits.ui.components.GameTable
 import com.dehong.duelofSuits.ui.components.PlayerHand
-import com.dehong.duelofSuits.ui.components.TrumpIndicator
 import com.dehong.duelofSuits.ui.theme.ActionGreen
 import com.dehong.duelofSuits.ui.theme.DangerRed
 import com.dehong.duelofSuits.ui.theme.TableGreen
@@ -381,7 +380,6 @@ private fun DrawPileOverlay(
             registry = registry,
             trumpCard = state.trumpCard
         )
-        TrumpIndicator(trumpSuit = state.trumpSuit)
     }
 }
 

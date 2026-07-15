@@ -57,13 +57,6 @@ fun DrawPile(
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = modifier
     ) {
-        Text(
-            text = "DRAW",
-            color = Color.White.copy(alpha = 0.6f),
-            fontSize = 9.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
-        )
         Row(
             verticalAlignment = Alignment.CenterVertically,
             // spacedBy(-27): pile left edge lands at trump card's layout center (27dp),
