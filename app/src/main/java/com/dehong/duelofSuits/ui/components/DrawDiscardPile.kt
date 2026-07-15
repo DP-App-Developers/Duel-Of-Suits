@@ -5,11 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -68,9 +65,20 @@ fun DrawPile(
             letterSpacing = 1.sp
         )
         Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            // spacedBy(-27): pile left edge lands at trump card's layout center (27dp),
+            // so exactly half the rotated card's visual width (39dp of 78dp) is revealed
+            horizontalArrangement = Arrangement.spacedBy((-27).dp)
         ) {
+            // Trump card to the left (first = rendered behind the pile), rotated 90° (perpendicular)
+            if (trumpCard != null && count > 0) {
+                CardView(
+                    card = trumpCard,
+                    faceDown = false,
+                    modifier = Modifier.rotate(90f)
+                )
+            }
+            // Draw pile on top (second = rendered in front)
             Box(contentAlignment = Alignment.TopEnd) {
                 if (count > 0) {
                     Box(modifier = Modifier.offset { IntOffset(4, 4) }) {
@@ -99,21 +107,6 @@ fun DrawPile(
                         color = SelectedBorder,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.ExtraBold
-                    )
-                }
-            }
-
-            // Trump card shown face-up and rotated 90° to indicate it's at the bottom of the pile
-            if (trumpCard != null && count > 0) {
-                Spacer(modifier = Modifier.width(4.dp))
-                Box(
-                    modifier = Modifier.size(CARD_HEIGHT, CARD_WIDTH),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CardView(
-                        card = trumpCard,
-                        faceDown = false,
-                        modifier = Modifier.rotate(90f)
                     )
                 }
             }
