@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -74,8 +73,10 @@ fun PlayerHand(
     getSelectionState: (Card) -> CardSelectionState,
     modifier: Modifier = Modifier
 ) {
+    // clipToBounds here is the actual clip plane — the bottom 20% of the cards
+    // (which are offset downward) gets cut off here, not inside a constrained child.
     Box(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().clipToBounds(),
         contentAlignment = Alignment.BottomCenter
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -87,12 +88,14 @@ fun PlayerHand(
 
             val hand = sortedHand(player.hand)
 
-            // Clip to 80% of card height — bottom 20% hangs off the screen edge
+            // Shift the row DOWN by 20% of full card height.
+            // Cards render at their natural CARD_HEIGHT (no height constraint),
+            // so they look identical to board cards. The outer clipToBounds
+            // hides the bottom 20% that hangs below the Box boundary.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(CARD_HEIGHT * 0.8f)
-                    .clipToBounds(),
+                    .offset { IntOffset(0, (CARD_HEIGHT * 0.2f).roundToPx()) },
                 contentAlignment = Alignment.Center
             ) {
                 Row(
