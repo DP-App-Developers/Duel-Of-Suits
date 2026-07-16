@@ -54,11 +54,6 @@ fun GameTable(
                 .height(CARD_HEIGHT + 20.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = if (state.phase == GamePhase.ATTACK_PHASE) "Waiting for attack..." else "",
-                color = Color.White.copy(alpha = 0.4f),
-                fontSize = 13.sp
-            )
         }
         return
     }

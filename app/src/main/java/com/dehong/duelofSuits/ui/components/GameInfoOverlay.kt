@@ -9,10 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,8 +24,6 @@ import com.dehong.duelofSuits.model.GamePhase
 import com.dehong.duelofSuits.model.GameState
 import com.dehong.duelofSuits.ui.theme.ActionGreen
 import com.dehong.duelofSuits.ui.theme.DangerRed
-import com.dehong.duelofSuits.ui.theme.Gold
-import com.dehong.duelofSuits.ui.theme.PanelDark
 import com.dehong.duelofSuits.ui.theme.TextOnDark
 
 private val BTN_SHAPE = RoundedCornerShape(6.dp)
@@ -43,90 +38,65 @@ fun GameInfoOverlay(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(PanelDark)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Status message with left gold accent strip
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.weight(1f)
-        ) {
-            Box(
-                modifier = Modifier
-                    .width(2.dp)
-                    .fillMaxHeight()
-                    .background(Gold.copy(alpha = 0.6f))
-            )
-            Text(
-                text = state.message,
-                color = TextOnDark.copy(alpha = 0.85f),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
+        when {
+            state.phase == GamePhase.ATTACK_PHASE && state.isHumanAttacker -> {
+                HudButton(
+                    label = "ATTACK",
+                    enabled = state.selectedCards.isNotEmpty() && !state.animating,
+                    background = Color(0xFFB07A00),
+                    textColor = Color.White,
+                    onClick = onPlaySelected
+                )
+            }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            when {
-                state.phase == GamePhase.ATTACK_PHASE && state.isHumanAttacker -> {
+            state.phase == GamePhase.THROW_IN_PHASE && state.isHumanTurn -> {
+                AnimatedVisibility(
+                    visible = state.selectedCards.isNotEmpty(),
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
                     HudButton(
-                        label = "ATTACK",
-                        enabled = state.selectedCards.isNotEmpty() && !state.animating,
-                        background = Color(0xFFB07A00),
+                        label = "THROW IN",
+                        enabled = !state.animating,
+                        background = Color(0xFF1565C0),
                         textColor = Color.White,
                         onClick = onPlaySelected
                     )
                 }
+                HudOutlineButton(
+                    label = "PASS",
+                    enabled = !state.animating,
+                    borderColor = TextOnDark.copy(alpha = 0.35f),
+                    textColor = TextOnDark.copy(alpha = 0.7f),
+                    onClick = onPass
+                )
+            }
 
-                state.phase == GamePhase.THROW_IN_PHASE && state.isHumanTurn -> {
-                    AnimatedVisibility(
-                        visible = state.selectedCards.isNotEmpty(),
-                        enter = fadeIn(),
-                        exit = fadeOut()
-                    ) {
-                        HudButton(
-                            label = "THROW IN",
-                            enabled = !state.animating,
-                            background = Color(0xFF1565C0),
-                            textColor = Color.White,
-                            onClick = onPlaySelected
-                        )
-                    }
-                    HudOutlineButton(
-                        label = "PASS",
+            state.phase == GamePhase.DEFENSE_PHASE && state.isHumanDefender -> {
+                AnimatedVisibility(
+                    visible = state.allSlotsDefended,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    HudButton(
+                        label = "CONFIRM ✓",
                         enabled = !state.animating,
-                        borderColor = TextOnDark.copy(alpha = 0.35f),
-                        textColor = TextOnDark.copy(alpha = 0.7f),
-                        onClick = onPass
+                        background = ActionGreen,
+                        textColor = Color.White,
+                        onClick = onConfirmDefense
                     )
                 }
-
-                state.phase == GamePhase.DEFENSE_PHASE && state.isHumanDefender -> {
-                    AnimatedVisibility(
-                        visible = state.allSlotsDefended,
-                        enter = fadeIn(),
-                        exit = fadeOut()
-                    ) {
-                        HudButton(
-                            label = "CONFIRM ✓",
-                            enabled = !state.animating,
-                            background = ActionGreen,
-                            textColor = Color.White,
-                            onClick = onConfirmDefense
-                        )
-                    }
-                    HudOutlineButton(
-                        label = "TAKE CARDS",
-                        enabled = !state.animating,
-                        borderColor = DangerRed.copy(alpha = 0.7f),
-                        textColor = DangerRed,
-                        onClick = onTakeCards
-                    )
-                }
+                HudOutlineButton(
+                    label = "TAKE CARDS",
+                    enabled = !state.animating,
+                    borderColor = DangerRed.copy(alpha = 0.7f),
+                    textColor = DangerRed,
+                    onClick = onTakeCards
+                )
             }
         }
     }

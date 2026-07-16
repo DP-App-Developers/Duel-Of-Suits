@@ -236,23 +236,26 @@ private fun TwoPlayerLayout(
             )
         }
 
-        GameInfoOverlay(
-            state = state,
-            onPlaySelected = viewModel::onPlaySelectedPressed,
-            onPass = viewModel::onPassPressed,
-            onConfirmDefense = viewModel::onConfirmDefensePressed,
-            onTakeCards = viewModel::onTakeCardsPressed,
-            modifier = Modifier.fillMaxWidth().height(52.dp)
-        )
-
-        PlayerHand(
-            player = state.players[0],
-            state = state,
-            registry = registry,
-            onCardTapped = viewModel::onHumanCardTapped,
-            getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
-            modifier = Modifier.fillMaxWidth().weight(0.45f)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().weight(0.45f),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            PlayerHand(
+                player = state.players[0],
+                state = state,
+                registry = registry,
+                onCardTapped = viewModel::onHumanCardTapped,
+                getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
+                modifier = Modifier.weight(1f)
+            )
+            GameInfoOverlay(
+                state = state,
+                onPlaySelected = viewModel::onPlaySelectedPressed,
+                onPass = viewModel::onPassPressed,
+                onConfirmDefense = viewModel::onConfirmDefensePressed,
+                onTakeCards = viewModel::onTakeCardsPressed
+            )
+        }
     }
 }
 
@@ -293,23 +296,26 @@ private fun ThreePlayerLayout(
             )
         }
 
-        GameInfoOverlay(
-            state = state,
-            onPlaySelected = viewModel::onPlaySelectedPressed,
-            onPass = viewModel::onPassPressed,
-            onConfirmDefense = viewModel::onConfirmDefensePressed,
-            onTakeCards = viewModel::onTakeCardsPressed,
-            modifier = Modifier.fillMaxWidth().height(52.dp)
-        )
-
-        PlayerHand(
-            player = state.players[0],
-            state = state,
-            registry = registry,
-            onCardTapped = viewModel::onHumanCardTapped,
-            getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
-            modifier = Modifier.fillMaxWidth().weight(0.38f)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().weight(0.38f),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            PlayerHand(
+                player = state.players[0],
+                state = state,
+                registry = registry,
+                onCardTapped = viewModel::onHumanCardTapped,
+                getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
+                modifier = Modifier.weight(1f)
+            )
+            GameInfoOverlay(
+                state = state,
+                onPlaySelected = viewModel::onPlaySelectedPressed,
+                onPass = viewModel::onPassPressed,
+                onConfirmDefense = viewModel::onConfirmDefensePressed,
+                onTakeCards = viewModel::onTakeCardsPressed
+            )
+        }
     }
 }
 
@@ -359,23 +365,26 @@ private fun FourPlayerLayout(
                 )
             }
 
-            GameInfoOverlay(
-                state = state,
-                onPlaySelected = viewModel::onPlaySelectedPressed,
-                onPass = viewModel::onPassPressed,
-                onConfirmDefense = viewModel::onConfirmDefensePressed,
-                onTakeCards = viewModel::onTakeCardsPressed,
-                modifier = Modifier.fillMaxWidth().height(52.dp)
-            )
-
-            PlayerHand(
-                player = state.players[0],
-                state = state,
-                registry = registry,
-                onCardTapped = viewModel::onHumanCardTapped,
-                getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
-                modifier = Modifier.fillMaxWidth().weight(0.38f)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().weight(0.38f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                PlayerHand(
+                    player = state.players[0],
+                    state = state,
+                    registry = registry,
+                    onCardTapped = viewModel::onHumanCardTapped,
+                    getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
+                    modifier = Modifier.weight(1f)
+                )
+                GameInfoOverlay(
+                    state = state,
+                    onPlaySelected = viewModel::onPlaySelectedPressed,
+                    onPass = viewModel::onPassPressed,
+                    onConfirmDefense = viewModel::onConfirmDefensePressed,
+                    onTakeCards = viewModel::onTakeCardsPressed
+                )
+            }
         }
     }
 }
