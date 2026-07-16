@@ -21,11 +21,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.dehong.duelofSuits.model.Card
 import com.dehong.duelofSuits.model.GamePhase
 import com.dehong.duelofSuits.model.GameState
@@ -65,45 +68,46 @@ fun AiPlayerArea(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        val faceDownCards = minOf(player.hand.size, 5)
+        val faceDownCards = minOf(player.hand.size, 8)
 
-        // Card fan at the very top — top 20% hangs off the screen edge
+        // Card fan at the very top — top 20% hangs off the screen edge.
+        // Cards rotate around their bottom-center so the fan arcs naturally.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(CARD_HEIGHT * 0.8f)
-                .clipToBounds()
+                .clipToBounds(),
+            contentAlignment = Alignment.TopCenter
         ) {
-            if (faceDownCards > 0) {
-                Box(
-                    modifier = Modifier
-                        .size((CARD_WIDTH.value + (faceDownCards - 1) * 6).dp, CARD_HEIGHT)
-                        .align(Alignment.TopCenter)
-                        .offset { IntOffset(0, -(CARD_HEIGHT * 0.2f).roundToPx()) }
-                        .onGloballyPositioned { coords ->
-                            registry.register(PositionKey.PlayerArea(player.id), coords)
-                        }
-                ) {
-                    repeat(faceDownCards) { idx ->
-                        CardView(
-                            card = Card.SuitedCard(Suit.SPADES, Rank.ACE),
-                            faceDown = true,
-                            modifier = Modifier
-                                .offset { IntOffset(idx * 6, 0) }
-                                .size(CARD_WIDTH, CARD_HEIGHT)
-                        )
+            // Registration anchor always present regardless of hand size
+            Box(
+                modifier = Modifier
+                    .size(CARD_WIDTH, CARD_HEIGHT)
+                    .offset { IntOffset(0, -(CARD_HEIGHT * 0.2f).roundToPx()) }
+                    .onGloballyPositioned { coords ->
+                        registry.register(PositionKey.PlayerArea(player.id), coords)
                     }
+            )
+            if (faceDownCards > 0) {
+                val centerIdx = (faceDownCards - 1) / 2f
+                repeat(faceDownCards) { idx ->
+                    val cardOffset = idx - centerIdx
+                    CardView(
+                        card = Card.SuitedCard(Suit.SPADES, Rank.ACE),
+                        faceDown = true,
+                        modifier = Modifier
+                            .offset { IntOffset(0, -(CARD_HEIGHT * 0.2f).roundToPx()) }
+                            .zIndex(idx.toFloat())
+                            .graphicsLayer {
+                                // All cards share the same top-center pivot (the hidden grip).
+                                // No x-spread: every card's top is at the same point, so the
+                                // bottoms fan outward naturally like a hand held from above.
+                                rotationZ = cardOffset * 8f
+                                transformOrigin = TransformOrigin(0.5f, 0.0f)
+                            }
+                            .size(CARD_WIDTH, CARD_HEIGHT)
+                    )
                 }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(CARD_WIDTH, CARD_HEIGHT)
-                        .align(Alignment.TopCenter)
-                        .offset { IntOffset(0, -(CARD_HEIGHT * 0.2f).roundToPx()) }
-                        .onGloballyPositioned { coords ->
-                            registry.register(PositionKey.PlayerArea(player.id), coords)
-                        }
-                )
             }
         }
 
@@ -176,12 +180,11 @@ fun AiSideArea(
         label = "aiSideRoleColor"
     )
 
-    // Total column width: visible card portion (80%) + space for labels
-    val visibleCardWidth = CARD_WIDTH * 0.8f
+    // Column width = 80% of card's visual landscape width (CARD_HEIGHT) + label space
     Column(
         modifier = modifier
             .fillMaxHeight()
-            .width(visibleCardWidth + 20.dp)
+            .width(CARD_HEIGHT * 0.8f + 20.dp)
             .padding(end = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -212,37 +215,42 @@ fun AiSideArea(
             )
         }
 
-        val faceDownCards = minOf(player.hand.size, 6)
-        // Cards offset left so 20% hangs off the left screen edge (screen clips naturally)
-        Box(modifier = Modifier.padding(top = 6.dp)) {
-            if (faceDownCards > 0) {
-                Box(
-                    modifier = Modifier
-                        .size(CARD_WIDTH, (CARD_HEIGHT.value + (faceDownCards - 1) * 8).dp)
-                        .offset { IntOffset(-(CARD_WIDTH * 0.2f).roundToPx(), 0) }
-                        .onGloballyPositioned { coords ->
-                            registry.register(PositionKey.PlayerArea(player.id), coords)
-                        }
-                ) {
-                    repeat(faceDownCards) { idx ->
-                        CardView(
-                            card = Card.SuitedCard(Suit.SPADES, Rank.ACE),
-                            faceDown = true,
-                            modifier = Modifier
-                                .offset { IntOffset(0, idx * 8) }
-                                .size(CARD_WIDTH, CARD_HEIGHT)
-                        )
+        val faceDownCards = minOf(player.hand.size, 8)
+        // Cards are rotated 90° (landscape) and fanned vertically.
+        // translationX inside graphicsLayer shifts each card left so 20% of its
+        // landscape visual width (CARD_HEIGHT) hangs off the left screen edge.
+        Box(
+            modifier = Modifier.padding(top = 6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // Registration anchor always present
+            Box(
+                modifier = Modifier
+                    .size(CARD_WIDTH, CARD_HEIGHT)
+                    .onGloballyPositioned { coords ->
+                        registry.register(PositionKey.PlayerArea(player.id), coords)
                     }
+            )
+            if (faceDownCards > 0) {
+                val centerIdx = (faceDownCards - 1) / 2f
+                repeat(faceDownCards) { idx ->
+                    val cardOffset = idx - centerIdx
+                    CardView(
+                        card = Card.SuitedCard(Suit.SPADES, Rank.ACE),
+                        faceDown = true,
+                        modifier = Modifier
+                            .offset(y = (cardOffset * 14).dp)
+                            // push 20% of the landscape visual width (CARD_HEIGHT) off left edge
+                            .offset { IntOffset(-(CARD_HEIGHT * 0.2f).roundToPx(), 0) }
+                            .zIndex(idx.toFloat())
+                            .graphicsLayer {
+                                // 90° makes each card landscape; extra angle fans them vertically
+                                rotationZ = 90f + cardOffset * 4f
+                                transformOrigin = TransformOrigin(0.5f, 0.5f)
+                            }
+                            .size(CARD_WIDTH, CARD_HEIGHT)
+                    )
                 }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(CARD_WIDTH, CARD_HEIGHT)
-                        .offset { IntOffset(-(CARD_WIDTH * 0.2f).roundToPx(), 0) }
-                        .onGloballyPositioned { coords ->
-                            registry.register(PositionKey.PlayerArea(player.id), coords)
-                        }
-                )
             }
         }
 
