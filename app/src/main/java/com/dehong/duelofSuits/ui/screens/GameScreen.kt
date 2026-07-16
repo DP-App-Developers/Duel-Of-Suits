@@ -444,7 +444,7 @@ private fun handleAnimationEvent(
                     faceDown = event.targetPlayerId != 0,
                     from = startOffset,
                     to = endOffset,
-                    durationMs = 280,
+                    durationMs = 500,
                     flyingCards = flyingCards
                 )
             }
@@ -465,7 +465,7 @@ private fun handleAnimationEvent(
                     faceDown = false,
                     from = startOffset,
                     to = endOffset,
-                    durationMs = 250,
+                    durationMs = 450,
                     flyingCards = flyingCards
                 )
             }
@@ -486,7 +486,7 @@ private fun handleAnimationEvent(
                     faceDown = false,
                     from = startOffset,
                     to = endOffset,
-                    durationMs = 280,
+                    durationMs = 450,
                     flyingCards = flyingCards
                 )
             }

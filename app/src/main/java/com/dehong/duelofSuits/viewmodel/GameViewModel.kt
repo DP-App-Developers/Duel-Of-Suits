@@ -89,7 +89,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
                 )
             }
 
-            delay(totalCards * 60L + 400L)
+            delay(totalCards * 60L + 650L)
 
             _gameState.value = GameState(
                 players = players,
