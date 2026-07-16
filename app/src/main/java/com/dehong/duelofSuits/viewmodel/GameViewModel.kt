@@ -181,8 +181,10 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
         if (validSlots.size == 1) {
             val attackCard = validSlots[0].attackCard
             val newState = GameEngine.processDefenseCard(attackCard, card, 0, state)
-            _gameState.value = newState.copy(selectedHandCardForDefense = null)
+            val updated = newState.copy(selectedHandCardForDefense = null)
+            _gameState.value = updated
             emitDefenseCardAnimation(card, 0, state.tableSlots.indexOf(validSlots[0]))
+            if (updated.allSlotsDefended) autoAdvanceDefense()
         } else {
             _gameState.value = state.copy(selectedHandCardForDefense = card)
         }
@@ -199,8 +201,10 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             return
         }
         val newState = GameEngine.processDefenseCard(slot.attackCard, selectedCard, 0, state)
-        _gameState.value = newState.copy(selectedHandCardForDefense = null)
+        val updated = newState.copy(selectedHandCardForDefense = null)
+        _gameState.value = updated
         emitDefenseCardAnimation(selectedCard, 0, slotIndex)
+        if (updated.allSlotsDefended) autoAdvanceDefense()
     }
 
     fun onPlaySelectedPressed() {
@@ -249,16 +253,16 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
         checkAndRunAiTurn()
     }
 
-    fun onConfirmDefensePressed() {
-        val state = _gameState.value
-        if (state.animating || !state.isHumanDefender) return
-        if (!state.allSlotsDefended) { _errorMessage.value = "Defend all cards first"; return }
-        _gameState.value = state.copy(
-            phase = GamePhase.THROW_IN_PHASE,
-            throwInPassedIndices = emptySet(),
-            message = "Defended! Throw in more cards or pass"
-        )
-        checkAndRunAiTurn()
+    private fun autoAdvanceDefense() {
+        viewModelScope.launch {
+            delay(500L)
+            _gameState.value = _gameState.value.copy(
+                phase = GamePhase.THROW_IN_PHASE,
+                throwInPassedIndices = emptySet(),
+                message = "Defended! Throw in more cards or pass"
+            )
+            checkAndRunAiTurn()
+        }
     }
 
     fun onTakeCardsPressed() {
@@ -526,10 +530,12 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
                 when {
                     card == state.selectedHandCardForDefense -> CardSelectionState.SELECTED
                     else -> {
-                        val hasValidSlot = state.tableSlots.any { slot ->
-                            slot.defenseCard == null && GameEngine.canDefend(slot.attackCard, card, state.trumpSuit)
+                        val hand = state.players[0].hand
+                        if (GameEngine.cardCanParticipateInDefense(card, hand, state.tableSlots, state.trumpSuit)) {
+                            CardSelectionState.HIGHLIGHTED
+                        } else {
+                            CardSelectionState.DISABLED
                         }
-                        if (hasValidSlot) CardSelectionState.HIGHLIGHTED else CardSelectionState.DISABLED
                     }
                 }
             }

@@ -224,6 +224,38 @@ object GameEngine {
         return state.players.firstOrNull { it.hand.isEmpty() }?.id
     }
 
+    // Returns true if `hand` can cover every attack card in `attackCards` with a unique card each.
+    private fun canAssignAll(hand: List<Card>, attackCards: List<Card>, trumpSuit: Suit): Boolean {
+        if (attackCards.isEmpty()) return true
+        if (hand.size < attackCards.size) return false
+        val used = BooleanArray(hand.size)
+        fun match(slotIdx: Int): Boolean {
+            if (slotIdx == attackCards.size) return true
+            val attack = attackCards[slotIdx]
+            for (i in hand.indices) {
+                if (!used[i] && canDefend(attack, hand[i], trumpSuit)) {
+                    used[i] = true
+                    if (match(slotIdx + 1)) return true
+                    used[i] = false
+                }
+            }
+            return false
+        }
+        return match(0)
+    }
+
+    // Returns true only if there exists a complete defense plan that uses `card` for some slot.
+    fun cardCanParticipateInDefense(card: Card, hand: List<Card>, slots: List<TableSlot>, trumpSuit: Suit): Boolean {
+        val undefended = slots.filter { it.defenseCard == null }
+        for (targetSlot in undefended) {
+            if (!canDefend(targetSlot.attackCard, card, trumpSuit)) continue
+            val remainingHand = hand - setOf(card)
+            val remainingAttacks = undefended.filter { it !== targetSlot }.map { it.attackCard }
+            if (canAssignAll(remainingHand, remainingAttacks, trumpSuit)) return true
+        }
+        return false
+    }
+
     fun getTableRanks(state: GameState): Set<Rank> {
         return state.tableSlots.flatMap { slot ->
             listOfNotNull(

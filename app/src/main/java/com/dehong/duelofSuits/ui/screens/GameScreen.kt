@@ -251,7 +251,6 @@ private fun TwoPlayerLayout(
                 state = state,
                 onPlaySelected = viewModel::onPlaySelectedPressed,
                 onPass = viewModel::onPassPressed,
-                onConfirmDefense = viewModel::onConfirmDefensePressed,
                 onTakeCards = viewModel::onTakeCardsPressed
             )
         }
@@ -311,7 +310,6 @@ private fun ThreePlayerLayout(
                 state = state,
                 onPlaySelected = viewModel::onPlaySelectedPressed,
                 onPass = viewModel::onPassPressed,
-                onConfirmDefense = viewModel::onConfirmDefensePressed,
                 onTakeCards = viewModel::onTakeCardsPressed
             )
         }
@@ -380,7 +378,6 @@ private fun FourPlayerLayout(
                     state = state,
                     onPlaySelected = viewModel::onPlaySelectedPressed,
                     onPass = viewModel::onPassPressed,
-                    onConfirmDefense = viewModel::onConfirmDefensePressed,
                     onTakeCards = viewModel::onTakeCardsPressed
                 )
             }

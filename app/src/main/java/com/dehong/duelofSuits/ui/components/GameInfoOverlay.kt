@@ -1,8 +1,5 @@
 package com.dehong.duelofSuits.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dehong.duelofSuits.model.GamePhase
 import com.dehong.duelofSuits.model.GameState
-import com.dehong.duelofSuits.ui.theme.ActionGreen
 import com.dehong.duelofSuits.ui.theme.DangerRed
 import com.dehong.duelofSuits.ui.theme.TextOnDark
 
@@ -33,7 +29,6 @@ fun GameInfoOverlay(
     state: GameState,
     onPlaySelected: () -> Unit,
     onPass: () -> Unit,
-    onConfirmDefense: () -> Unit,
     onTakeCards: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -54,11 +49,7 @@ fun GameInfoOverlay(
             }
 
             state.phase == GamePhase.THROW_IN_PHASE && state.isHumanTurn -> {
-                AnimatedVisibility(
-                    visible = state.selectedCards.isNotEmpty(),
-                    enter = fadeIn(),
-                    exit = fadeOut()
-                ) {
+                if (state.selectedCards.isNotEmpty()) {
                     HudButton(
                         label = "THROW IN",
                         enabled = !state.animating,
@@ -77,21 +68,8 @@ fun GameInfoOverlay(
             }
 
             state.phase == GamePhase.DEFENSE_PHASE && state.isHumanDefender -> {
-                AnimatedVisibility(
-                    visible = state.allSlotsDefended,
-                    enter = fadeIn(),
-                    exit = fadeOut()
-                ) {
-                    HudButton(
-                        label = "CONFIRM ✓",
-                        enabled = !state.animating,
-                        background = ActionGreen,
-                        textColor = Color.White,
-                        onClick = onConfirmDefense
-                    )
-                }
                 HudOutlineButton(
-                    label = "TAKE CARDS",
+                    label = "TAKE",
                     enabled = !state.animating,
                     borderColor = DangerRed.copy(alpha = 0.7f),
                     textColor = DangerRed,
