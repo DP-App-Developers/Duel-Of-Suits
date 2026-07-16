@@ -187,7 +187,7 @@ fun AiSideArea(
             .width(CARD_HEIGHT * 0.8f + 20.dp)
             .padding(end = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Bottom
     ) {
         Box(
             modifier = Modifier

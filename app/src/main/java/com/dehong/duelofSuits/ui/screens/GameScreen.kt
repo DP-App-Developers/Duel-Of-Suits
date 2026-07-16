@@ -392,8 +392,8 @@ private fun DrawPileOverlay(
     registry: PositionRegistry,
     modifier: Modifier = Modifier
 ) {
-    // Top 20% of the screen is taken by AI hand; position draw pile just below that
-    val topOffset = CARD_HEIGHT * 0.8f + 8.dp
+    // Clear the full AiPlayerArea (card fan + name/count labels below it)
+    val topOffset = CARD_HEIGHT + 36.dp
     Column(
         modifier = modifier.padding(top = topOffset, end = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
