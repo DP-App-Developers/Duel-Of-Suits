@@ -5,7 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -32,10 +32,10 @@ fun GameInfoOverlay(
     onTakeCards: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Column(
+        modifier = modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalAlignment = Alignment.End
     ) {
         when {
             state.phase == GamePhase.ATTACK_PHASE && state.isHumanAttacker -> {
@@ -51,7 +51,7 @@ fun GameInfoOverlay(
             state.phase == GamePhase.THROW_IN_PHASE && state.isHumanTurn -> {
                 if (state.selectedCards.isNotEmpty()) {
                     HudButton(
-                        label = "THROW IN",
+                        label = "THROW",
                         enabled = !state.animating,
                         background = Color(0xFF1565C0),
                         textColor = Color.White,
@@ -93,15 +93,15 @@ private fun HudButton(
             .clip(BTN_SHAPE)
             .background(if (enabled) background else background.copy(alpha = 0.35f))
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 7.dp),
+            .padding(horizontal = 10.dp, vertical = 7.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
             color = if (enabled) textColor else textColor.copy(alpha = 0.5f),
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
-            letterSpacing = 0.8.sp
+            letterSpacing = 0.5.sp
         )
     }
 }
@@ -120,15 +120,15 @@ private fun HudOutlineButton(
             .clip(BTN_SHAPE)
             .background(Color.White.copy(alpha = 0.04f))
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 7.dp),
+            .padding(horizontal = 10.dp, vertical = 7.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
             color = if (enabled) textColor else textColor.copy(alpha = 0.4f),
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
-            letterSpacing = 0.8.sp
+            letterSpacing = 0.5.sp
         )
     }
 }

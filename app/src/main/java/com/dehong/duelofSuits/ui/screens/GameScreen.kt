@@ -142,6 +142,15 @@ fun GameScreen(
                         registry = registry,
                         modifier = Modifier.align(Alignment.TopEnd)
                     )
+
+                    // Action buttons float at bottom-right, independent of hand layout
+                    GameInfoOverlay(
+                        state = state,
+                        onPlaySelected = viewModel::onPlaySelectedPressed,
+                        onPass = viewModel::onPassPressed,
+                        onTakeCards = viewModel::onTakeCardsPressed,
+                        modifier = Modifier.align(Alignment.BottomEnd)
+                    )
                 }
             }
 
@@ -239,20 +248,16 @@ private fun TwoPlayerLayout(
             modifier = Modifier.fillMaxWidth().weight(0.45f),
             verticalAlignment = Alignment.Bottom
         ) {
+            Spacer(modifier = Modifier.weight(0.15f))
             PlayerHand(
                 player = state.players[0],
                 state = state,
                 registry = registry,
                 onCardTapped = viewModel::onHumanCardTapped,
                 getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(0.70f).fillMaxHeight()
             )
-            GameInfoOverlay(
-                state = state,
-                onPlaySelected = viewModel::onPlaySelectedPressed,
-                onPass = viewModel::onPassPressed,
-                onTakeCards = viewModel::onTakeCardsPressed
-            )
+            Spacer(modifier = Modifier.weight(0.15f))
         }
     }
 }
@@ -298,20 +303,16 @@ private fun ThreePlayerLayout(
             modifier = Modifier.fillMaxWidth().weight(0.38f),
             verticalAlignment = Alignment.Bottom
         ) {
+            Spacer(modifier = Modifier.weight(0.15f))
             PlayerHand(
                 player = state.players[0],
                 state = state,
                 registry = registry,
                 onCardTapped = viewModel::onHumanCardTapped,
                 getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(0.70f).fillMaxHeight()
             )
-            GameInfoOverlay(
-                state = state,
-                onPlaySelected = viewModel::onPlaySelectedPressed,
-                onPass = viewModel::onPassPressed,
-                onTakeCards = viewModel::onTakeCardsPressed
-            )
+            Spacer(modifier = Modifier.weight(0.15f))
         }
     }
 }
@@ -324,63 +325,61 @@ private fun FourPlayerLayout(
     registry: PositionRegistry,
     viewModel: GameViewModel
 ) {
-    Row(modifier = Modifier.fillMaxSize()) {
-        // Left column: AI3 side area
-        AiSideArea(
-            player = state.players[3],
-            state = state,
-            registry = registry
-        )
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Top area: side AI + top AIs + center panel
+        Row(
+            modifier = Modifier.fillMaxWidth().weight(0.62f)
+        ) {
+            AiSideArea(
+                player = state.players[3],
+                state = state,
+                registry = registry
+            )
 
-        // Main content area
-        Column(modifier = Modifier.weight(1f)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(0.52f),
-                verticalAlignment = Alignment.Top
-            ) {
-                AiPlayerArea(
-                    player = state.players[1],
-                    state = state,
-                    registry = registry,
-                    modifier = Modifier.weight(0.25f).fillMaxHeight()
-                )
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().fillMaxHeight(),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    AiPlayerArea(
+                        player = state.players[1],
+                        state = state,
+                        registry = registry,
+                        modifier = Modifier.weight(0.25f).fillMaxHeight()
+                    )
 
-                CenterPanel(
-                    state = state,
-                    registry = registry,
-                    viewModel = viewModel,
-                    modifier = Modifier.weight(0.50f).fillMaxHeight()
-                )
+                    CenterPanel(
+                        state = state,
+                        registry = registry,
+                        viewModel = viewModel,
+                        modifier = Modifier.weight(0.50f).fillMaxHeight()
+                    )
 
-                AiPlayerArea(
-                    player = state.players[2],
-                    state = state,
-                    registry = registry,
-                    modifier = Modifier.weight(0.25f).fillMaxHeight()
-                )
+                    AiPlayerArea(
+                        player = state.players[2],
+                        state = state,
+                        registry = registry,
+                        modifier = Modifier.weight(0.25f).fillMaxHeight()
+                    )
+                }
             }
+        }
 
-            Row(
-                modifier = Modifier.fillMaxWidth().weight(0.38f),
-                verticalAlignment = Alignment.Bottom
-            ) {
-                PlayerHand(
-                    player = state.players[0],
-                    state = state,
-                    registry = registry,
-                    onCardTapped = viewModel::onHumanCardTapped,
-                    getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
-                    modifier = Modifier.weight(1f)
-                )
-                GameInfoOverlay(
-                    state = state,
-                    onPlaySelected = viewModel::onPlaySelectedPressed,
-                    onPass = viewModel::onPassPressed,
-                    onTakeCards = viewModel::onTakeCardsPressed
-                )
-            }
+        // Hand row spans full screen width so centering is screen-relative
+        Row(
+            modifier = Modifier.fillMaxWidth().weight(0.38f),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Spacer(modifier = Modifier.weight(0.15f))
+            PlayerHand(
+                player = state.players[0],
+                state = state,
+                registry = registry,
+                onCardTapped = viewModel::onHumanCardTapped,
+                getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
+                modifier = Modifier.weight(0.70f).fillMaxHeight()
+            )
+            Spacer(modifier = Modifier.weight(0.15f))
         }
     }
 }

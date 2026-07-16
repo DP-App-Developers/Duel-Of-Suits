@@ -4,15 +4,15 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -37,8 +38,7 @@ import com.dehong.duelofSuits.ui.animation.PositionRegistry
 import com.dehong.duelofSuits.ui.theme.ActionGreen
 import com.dehong.duelofSuits.ui.theme.CounterBackground
 import com.dehong.duelofSuits.ui.theme.TextOnDark
-
-private val CARD_OVERLAP = (-14).dp
+import kotlin.math.roundToInt
 
 private val SUIT_ORDER = mapOf(
     Suit.DIAMONDS to 0,
@@ -73,55 +73,55 @@ fun PlayerHand(
     getSelectionState: (Card) -> CardSelectionState,
     modifier: Modifier = Modifier
 ) {
-    // clipToBounds here is the actual clip plane — the bottom 20% of the cards
-    // (which are offset downward) gets cut off here, not inside a constrained child.
-    Box(
-        modifier = modifier.fillMaxWidth().clipToBounds(),
+    val hand = sortedHand(player.hand)
+    val n = hand.size
+    val density = LocalDensity.current
+
+    BoxWithConstraints(
+        modifier = modifier.clipToBounds(),
         contentAlignment = Alignment.BottomCenter
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            HandCountBadge(
-                player = player,
-                state = state,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
+        val availableWidthPx = constraints.maxWidth.toFloat()
+        val cardWidthPx = with(density) { CARD_WIDTH.toPx() }
+        // For 1 card: center it. For n cards: left edge at 0, right edge flush to end.
+        val startX = if (n <= 1) (availableWidthPx - cardWidthPx) / 2f else 0f
+        val step = if (n <= 1) 0f else (availableWidthPx - cardWidthPx) / (n - 1)
 
-            val hand = sortedHand(player.hand)
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            HandCountBadge(player = player, state = state, modifier = Modifier.padding(bottom = 4.dp))
 
-            // Shift the row DOWN by 20% of full card height.
-            // Cards render at their natural CARD_HEIGHT (no height constraint),
-            // so they look identical to board cards. The outer clipToBounds
-            // hides the bottom 20% that hangs below the Box boundary.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(CARD_HEIGHT)
                     .offset { IntOffset(0, (CARD_HEIGHT * 0.2f).roundToPx()) }
                     .onGloballyPositioned { coords ->
                         registry.register(PositionKey.PlayerArea(player.id), coords)
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(CARD_OVERLAP),
-                    modifier = Modifier.horizontalScroll(rememberScrollState())
-                ) {
-                    hand.forEachIndexed { idx, card ->
-                        val selState = getSelectionState(card)
-                        val yOffset = if (selState == CardSelectionState.SELECTED) (-8).dp else 0.dp
-                        CardView(
-                            card = card,
-                            selectionState = selState,
-                            modifier = Modifier
-                                .zIndex(idx.toFloat())
-                                .offset { IntOffset(0, yOffset.roundToPx()) }
-                                .onGloballyPositioned { coords ->
-                                    registry.register(PositionKey.HandCard(player.id, idx), coords)
-                                }
-                                .clickable(enabled = selState != CardSelectionState.DISABLED) {
-                                    onCardTapped(card)
-                                }
-                        )
                     }
+            ) {
+                hand.forEachIndexed { idx, card ->
+                    val selState = getSelectionState(card)
+                    val xPx = (startX + idx * step).roundToInt()
+                    val yPx = if (selState == CardSelectionState.SELECTED) {
+                        with(density) { (-8).dp.roundToPx() }
+                    } else 0
+
+                    CardView(
+                        card = card,
+                        selectionState = selState,
+                        modifier = Modifier
+                            .offset { IntOffset(xPx, yPx) }
+                            .zIndex(idx.toFloat())
+                            .onGloballyPositioned { coords ->
+                                registry.register(PositionKey.HandCard(player.id, idx), coords)
+                            }
+                            .clickable(enabled = selState != CardSelectionState.DISABLED) {
+                                onCardTapped(card)
+                            }
+                    )
                 }
             }
         }
