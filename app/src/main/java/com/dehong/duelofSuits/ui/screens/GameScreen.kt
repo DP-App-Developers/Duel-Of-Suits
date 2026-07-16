@@ -122,7 +122,6 @@ fun GameScreen(
                         x += spacing
                     }
                 }
-                .navigationBarsPadding()
         ) {
             when (state.phase) {
                 GamePhase.GAME_OVER -> GameOverOverlay(
@@ -238,7 +237,7 @@ private fun TwoPlayerLayout(
 
         Row(
             modifier = Modifier.fillMaxWidth().weight(0.45f),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Bottom
         ) {
             PlayerHand(
                 player = state.players[0],
@@ -298,7 +297,7 @@ private fun ThreePlayerLayout(
 
         Row(
             modifier = Modifier.fillMaxWidth().weight(0.38f),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Bottom
         ) {
             PlayerHand(
                 player = state.players[0],
@@ -367,7 +366,7 @@ private fun FourPlayerLayout(
 
             Row(
                 modifier = Modifier.fillMaxWidth().weight(0.38f),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Bottom
             ) {
                 PlayerHand(
                     player = state.players[0],
