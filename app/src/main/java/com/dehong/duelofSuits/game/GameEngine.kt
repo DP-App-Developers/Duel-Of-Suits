@@ -53,7 +53,7 @@ object GameEngine {
             players = updatedPlayers,
             tableSlots = newSlots,
             selectedCards = emptySet(),
-            phase = GamePhase.THROW_IN_PHASE,
+            phase = GamePhase.DEFENSE_PHASE,
             throwInPassedIndices = emptySet(),
             defenderStartingHandCount = state.defender.hand.size,
             message = "${state.defender.name} must defend"
