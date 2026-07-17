@@ -337,8 +337,9 @@ private fun FourPlayerLayout(
         Row(
             modifier = Modifier.fillMaxWidth().weight(0.62f)
         ) {
+            // Clockwise from bottom: 0 (you) → 1 (left) → 2 (top-left) → 3 (top-right)
             AiSideArea(
-                player = state.players[3],
+                player = state.players[1],
                 state = state,
                 registry = registry
             )
@@ -356,7 +357,7 @@ private fun FourPlayerLayout(
                 )
 
                 AiPlayerArea(
-                    player = state.players[1],
+                    player = state.players[2],
                     state = state,
                     registry = registry,
                     modifier = Modifier
@@ -366,7 +367,7 @@ private fun FourPlayerLayout(
                 )
 
                 AiPlayerArea(
-                    player = state.players[2],
+                    player = state.players[3],
                     state = state,
                     registry = registry,
                     modifier = Modifier
