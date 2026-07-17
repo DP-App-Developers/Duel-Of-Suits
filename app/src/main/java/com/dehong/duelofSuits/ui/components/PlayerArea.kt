@@ -3,22 +3,27 @@ package com.dehong.duelofSuits.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -29,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.dehong.duelofSuits.model.Card
-import com.dehong.duelofSuits.model.GamePhase
 import com.dehong.duelofSuits.model.GameState
 import com.dehong.duelofSuits.model.Player
 import com.dehong.duelofSuits.model.Rank
@@ -37,8 +41,40 @@ import com.dehong.duelofSuits.model.Suit
 import com.dehong.duelofSuits.ui.animation.PositionKey
 import com.dehong.duelofSuits.ui.animation.PositionRegistry
 import com.dehong.duelofSuits.ui.theme.ActionGreen
-import com.dehong.duelofSuits.ui.theme.CounterBackground
-import com.dehong.duelofSuits.ui.theme.TextOnDark
+import com.dehong.duelofSuits.ui.theme.Gold
+
+private val BADGE_SHAPE = RoundedCornerShape(20.dp)
+private val BADGE_BG = Color(0xEE040C07)
+
+@Composable
+private fun AiBadge(
+    count: Int,
+    roleColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .shadow(elevation = 6.dp, shape = BADGE_SHAPE)
+            .background(BADGE_BG, BADGE_SHAPE)
+            .border(0.5.dp, Gold.copy(alpha = 0.22f), BADGE_SHAPE)
+            .padding(horizontal = 8.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .background(roleColor, CircleShape)
+        )
+        Text(
+            text = "$count",
+            color = Color(0xFFF0E6D0),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = (-0.3).sp
+        )
+    }
+}
 
 @Composable
 fun AiPlayerArea(
@@ -69,7 +105,6 @@ fun AiPlayerArea(
     ) {
         val faceDownCards = minOf(player.hand.size, 8)
 
-        // Mirror of AiSideArea: portrait cards fanned horizontally, top 20% cropped off screen.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -103,52 +138,12 @@ fun AiPlayerArea(
                     )
                 }
             }
-        }
 
-        // Labels below the card fan
-        Box(
-            modifier = Modifier
-                .padding(top = 4.dp)
-                .background(roleColor, RoundedCornerShape(4.dp))
-                .padding(horizontal = 6.dp, vertical = 2.dp)
-        ) {
-            Text(
-                text = player.name,
-                color = Color.White,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold
+            AiBadge(
+                count = player.hand.size,
+                roleColor = roleColor,
+                modifier = Modifier.align(Alignment.BottomCenter).zIndex(10f)
             )
-        }
-
-        Box(
-            modifier = Modifier
-                .padding(top = 2.dp)
-                .background(CounterBackground, RoundedCornerShape(4.dp))
-                .padding(horizontal = 6.dp, vertical = 2.dp)
-        ) {
-            Text(
-                text = "${player.hand.size}",
-                color = TextOnDark,
-                fontSize = 10.sp
-            )
-        }
-
-        if (state.phase != GamePhase.GAME_OVER) {
-            val roleLabel = when {
-                isAttacker -> "ATK"
-                isDefender -> "DEF"
-                else -> ""
-            }
-            if (roleLabel.isNotEmpty()) {
-                Text(
-                    text = roleLabel,
-                    color = roleColor.copy(alpha = 0.8f),
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-            }
         }
     }
 }
@@ -174,50 +169,18 @@ fun AiSideArea(
         label = "aiSideRoleColor"
     )
 
-    // Column width = 80% of card's visual landscape width (CARD_HEIGHT) + label space
-    Column(
+    Box(
         modifier = modifier
             .fillMaxHeight()
             .width(CARD_HEIGHT * 0.8f + 20.dp)
-            .padding(end = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Bottom
+            .padding(end = 4.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .background(roleColor, RoundedCornerShape(4.dp))
-                .padding(horizontal = 4.dp, vertical = 2.dp)
-        ) {
-            Text(
-                text = player.name,
-                color = Color.White,
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .padding(top = 2.dp)
-                .background(CounterBackground, RoundedCornerShape(4.dp))
-                .padding(horizontal = 4.dp, vertical = 2.dp)
-        ) {
-            Text(
-                text = "${player.hand.size}",
-                color = TextOnDark,
-                fontSize = 10.sp
-            )
-        }
-
         val faceDownCards = minOf(player.hand.size, 8)
-        // Cards are rotated 90° (landscape) and fanned vertically.
-        // translationX inside graphicsLayer shifts each card left so 20% of its
-        // landscape visual width (CARD_HEIGHT) hangs off the left screen edge.
+
         Box(
-            modifier = Modifier.padding(top = 6.dp),
+            modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            // Registration anchor always present
             Box(
                 modifier = Modifier
                     .size(CARD_WIDTH, CARD_HEIGHT)
@@ -234,11 +197,9 @@ fun AiSideArea(
                         faceDown = true,
                         modifier = Modifier
                             .offset(y = (cardOffset * 14).dp)
-                            // push 20% of the landscape visual width (CARD_HEIGHT) off left edge
                             .offset { IntOffset(-(CARD_HEIGHT * 0.2f).roundToPx(), 0) }
                             .zIndex(idx.toFloat())
                             .graphicsLayer {
-                                // 90° makes each card landscape; extra angle fans them vertically
                                 rotationZ = 90f + cardOffset * 4f
                                 transformOrigin = TransformOrigin(0.5f, 0.5f)
                             }
@@ -248,22 +209,10 @@ fun AiSideArea(
             }
         }
 
-        if (state.phase != GamePhase.GAME_OVER) {
-            val roleLabel = when {
-                isAttacker -> "ATK"
-                isDefender -> "DEF"
-                else -> ""
-            }
-            if (roleLabel.isNotEmpty()) {
-                Text(
-                    text = roleLabel,
-                    color = roleColor.copy(alpha = 0.8f),
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-        }
+        AiBadge(
+            count = player.hand.size,
+            roleColor = roleColor,
+            modifier = Modifier.align(Alignment.CenterEnd)
+        )
     }
 }

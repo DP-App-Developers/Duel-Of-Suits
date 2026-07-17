@@ -1,18 +1,20 @@
 package com.dehong.duelofSuits.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
@@ -24,8 +26,7 @@ import com.dehong.duelofSuits.model.Rank
 import com.dehong.duelofSuits.model.Suit
 import com.dehong.duelofSuits.ui.animation.PositionKey
 import com.dehong.duelofSuits.ui.animation.PositionRegistry
-import com.dehong.duelofSuits.ui.theme.CounterBackground
-import com.dehong.duelofSuits.ui.theme.SelectedBorder
+import com.dehong.duelofSuits.ui.theme.Gold
 
 @Composable
 fun DrawDiscardPiles(
@@ -72,7 +73,7 @@ fun DrawPile(
                 )
             }
             // Draw pile on top (second = rendered in front)
-            Box(contentAlignment = Alignment.TopEnd) {
+            Box(contentAlignment = Alignment.TopStart) {
                 if (count > 0) {
                     Box(modifier = Modifier.offset { IntOffset(4, 4) }) {
                         CardView(card = Card.SuitedCard(Suit.SPADES, Rank.ACE), faceDown = true,
@@ -89,17 +90,23 @@ fun DrawPile(
                         registry.register(PositionKey.DrawPile, coords)
                     })
                 }
+                val badgeShape = RoundedCornerShape(20.dp)
                 Box(
                     modifier = Modifier
-                        .background(CounterBackground, CircleShape)
-                        .padding(horizontal = 5.dp, vertical = 2.dp)
-                        .offset { IntOffset(4, (-4)) }
+                        .align(Alignment.TopStart)
+                        .offset { IntOffset(-4, -4) }
+                        .shadow(6.dp, badgeShape)
+                        .background(Color(0xEE040C07), badgeShape)
+                        .border(0.5.dp, Gold.copy(alpha = 0.30f), badgeShape)
+                        .padding(horizontal = 7.dp, vertical = 4.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "$count",
-                        color = SelectedBorder,
+                        color = Gold,
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.ExtraBold
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = (-0.3).sp
                     )
                 }
             }
