@@ -1,6 +1,11 @@
 package com.dehong.duelofSuits.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -77,10 +82,54 @@ private fun AiBadge(
 }
 
 @Composable
+internal fun PassBubble(modifier: Modifier = Modifier) {
+    val bubbleShape = RoundedCornerShape(12.dp)
+    Box(
+        modifier = modifier
+            .shadow(4.dp, bubbleShape)
+            .background(Color(0xCC0D1B0F), bubbleShape)
+            .border(0.5.dp, Color.White.copy(alpha = 0.18f), bubbleShape)
+            .padding(horizontal = 9.dp, vertical = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "PASS",
+            color = Color.White.copy(alpha = 0.7f),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
+    }
+}
+
+@Composable
+internal fun TurnArrow(char: String, modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "turnArrow")
+    val alpha by transition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(650, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "arrowAlpha"
+    )
+    Text(
+        text = char,
+        color = Color.White.copy(alpha = alpha),
+        fontSize = 18.sp,
+        fontWeight = FontWeight.Bold,
+        modifier = modifier
+    )
+}
+
+@Composable
 fun AiPlayerArea(
     player: Player,
     state: GameState,
     registry: PositionRegistry,
+    isActive: Boolean = false,
+    showPass: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val isDefender = state.defenderIndex == player.id
@@ -145,6 +194,10 @@ fun AiPlayerArea(
                 modifier = Modifier.align(Alignment.BottomCenter).zIndex(10f)
             )
         }
+        when {
+            showPass -> PassBubble()
+            isActive -> TurnArrow("▲")
+        }
     }
 }
 
@@ -154,6 +207,8 @@ fun AiSideArea(
     player: Player,
     state: GameState,
     registry: PositionRegistry,
+    isActive: Boolean = false,
+    showPass: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val isDefender = state.defenderIndex == player.id
@@ -214,5 +269,9 @@ fun AiSideArea(
             roleColor = roleColor,
             modifier = Modifier.align(Alignment.CenterEnd)
         )
+        when {
+            showPass -> PassBubble(modifier = Modifier.align(Alignment.BottomCenter))
+            isActive -> TurnArrow("◀", modifier = Modifier.align(Alignment.BottomCenter))
+        }
     }
 }

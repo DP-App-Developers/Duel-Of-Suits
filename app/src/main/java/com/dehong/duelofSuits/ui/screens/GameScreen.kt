@@ -30,8 +30,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -59,6 +62,8 @@ import com.dehong.duelofSuits.ui.animation.PositionKey
 import com.dehong.duelofSuits.ui.animation.PositionRegistry
 import com.dehong.duelofSuits.ui.components.AiPlayerArea
 import com.dehong.duelofSuits.ui.components.AiSideArea
+import com.dehong.duelofSuits.ui.components.PassBubble
+import com.dehong.duelofSuits.ui.components.TurnArrow
 import com.dehong.duelofSuits.ui.components.CARD_HEIGHT
 import com.dehong.duelofSuits.ui.components.CARD_WIDTH
 import com.dehong.duelofSuits.ui.components.CardView
@@ -88,6 +93,7 @@ fun GameScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val registry = remember { PositionRegistry() }
     val flyingCards = remember { mutableStateListOf<FlyingCard>() }
+    val passedPlayers = remember { mutableStateMapOf<Int, Boolean>() }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -101,6 +107,13 @@ fun GameScreen(
     LaunchedEffect(Unit) {
         viewModel.animationEvents.collect { event ->
             handleAnimationEvent(event, registry, flyingCards, scope)
+            if (event is AnimationEvent.PlayerPassed) {
+                passedPlayers[event.playerIdx] = true
+                scope.launch {
+                    delay(1200L)
+                    passedPlayers.remove(event.playerIdx)
+                }
+            }
         }
     }
 
@@ -134,7 +147,8 @@ fun GameScreen(
                     GameLayout(
                         state = state,
                         registry = registry,
-                        viewModel = viewModel
+                        viewModel = viewModel,
+                        passedPlayers = passedPlayers
                     )
 
                     // Draw pile anchored to the right edge
@@ -172,12 +186,22 @@ fun GameScreen(
 private fun GameLayout(
     state: GameState,
     registry: PositionRegistry,
-    viewModel: GameViewModel
+    viewModel: GameViewModel,
+    passedPlayers: Map<Int, Boolean>
 ) {
+    val actualActiveIdx = computeActiveIndex(state)
+    // frozenActiveIdx holds the last non-animating active player, so the cursor
+    // stays on whoever played the card until the animation completes.
+    var frozenActiveIdx by remember { mutableIntStateOf(actualActiveIdx) }
+    LaunchedEffect(state.animating, actualActiveIdx) {
+        if (!state.animating) frozenActiveIdx = actualActiveIdx
+    }
+    val activeIdx = if (state.animating) frozenActiveIdx else actualActiveIdx
+
     when (state.playerCount) {
-        2 -> TwoPlayerLayout(state, registry, viewModel)
-        4 -> FourPlayerLayout(state, registry, viewModel)
-        else -> ThreePlayerLayout(state, registry, viewModel)
+        2 -> TwoPlayerLayout(state, registry, viewModel, activeIdx, passedPlayers)
+        4 -> FourPlayerLayout(state, registry, viewModel, activeIdx, passedPlayers)
+        else -> ThreePlayerLayout(state, registry, viewModel, activeIdx, passedPlayers)
     }
 }
 
@@ -214,13 +238,32 @@ private fun CenterPanel(
     }
 }
 
+private fun computeActiveIndex(state: GameState): Int = when (state.phase) {
+    GamePhase.ATTACK_PHASE -> state.attackerIndex
+    GamePhase.DEFENSE_PHASE -> state.defenderIndex
+    GamePhase.THROW_IN_PHASE -> {
+        // Mirror runAiThrowIn's order: otherIndices first, then attacker.
+        // AI players (non-zero) act automatically; human (0) goes last.
+        val orderedAi = (state.otherIndices + listOf(state.attackerIndex))
+            .filter { it != 0 && it !in state.throwInPassedIndices }
+        when {
+            orderedAi.isNotEmpty() -> orderedAi.first()
+            0 in state.nonDefenderIndices && 0 !in state.throwInPassedIndices -> 0
+            else -> -1
+        }
+    }
+    else -> -1
+}
+
 // ── 2-player layout ──────────────────────────────────────────────────────────
 
 @Composable
 private fun TwoPlayerLayout(
     state: GameState,
     registry: PositionRegistry,
-    viewModel: GameViewModel
+    viewModel: GameViewModel,
+    activeIdx: Int,
+    passedPlayers: Map<Int, Boolean>
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // AI hand centered at the top
@@ -233,6 +276,8 @@ private fun TwoPlayerLayout(
                 player = state.players[1],
                 state = state,
                 registry = registry,
+                isActive = activeIdx == state.players[1].id,
+                showPass = state.players[1].id in passedPlayers,
                 modifier = Modifier.fillMaxWidth(0.5f).fillMaxHeight()
             )
         }
@@ -244,20 +289,26 @@ private fun TwoPlayerLayout(
             modifier = Modifier.fillMaxWidth().weight(0.30f)
         )
 
-        Row(
-            modifier = Modifier.fillMaxWidth().weight(0.45f),
-            verticalAlignment = Alignment.Bottom
-        ) {
-            Spacer(modifier = Modifier.weight(0.15f))
-            PlayerHand(
-                player = state.players[0],
-                state = state,
-                registry = registry,
-                onCardTapped = viewModel::onHumanCardTapped,
-                getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
-                modifier = Modifier.weight(0.70f).fillMaxHeight()
-            )
-            Spacer(modifier = Modifier.weight(0.15f))
+        Box(modifier = Modifier.fillMaxWidth().weight(0.45f)) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Spacer(modifier = Modifier.weight(0.15f))
+                PlayerHand(
+                    player = state.players[0],
+                    state = state,
+                    registry = registry,
+                    onCardTapped = viewModel::onHumanCardTapped,
+                    getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
+                    modifier = Modifier.weight(0.70f).fillMaxHeight()
+                )
+                Spacer(modifier = Modifier.weight(0.15f))
+            }
+            when {
+                0 in passedPlayers -> PassBubble(modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp))
+                activeIdx == state.players[0].id -> TurnArrow("▼", modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp))
+            }
         }
     }
 }
@@ -268,7 +319,9 @@ private fun TwoPlayerLayout(
 private fun ThreePlayerLayout(
     state: GameState,
     registry: PositionRegistry,
-    viewModel: GameViewModel
+    viewModel: GameViewModel,
+    activeIdx: Int,
+    passedPlayers: Map<Int, Boolean>
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         BoxWithConstraints(
@@ -289,6 +342,8 @@ private fun ThreePlayerLayout(
                 player = state.players[1],
                 state = state,
                 registry = registry,
+                isActive = activeIdx == state.players[1].id,
+                showPass = state.players[1].id in passedPlayers,
                 modifier = Modifier
                     .width(CARD_HEIGHT * 0.8f + 20.dp)
                     .fillMaxHeight()
@@ -299,6 +354,8 @@ private fun ThreePlayerLayout(
                 player = state.players[2],
                 state = state,
                 registry = registry,
+                isActive = activeIdx == state.players[2].id,
+                showPass = state.players[2].id in passedPlayers,
                 modifier = Modifier
                     .width(CARD_HEIGHT * 0.8f + 20.dp)
                     .fillMaxHeight()
@@ -306,20 +363,26 @@ private fun ThreePlayerLayout(
             )
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth().weight(0.38f),
-            verticalAlignment = Alignment.Bottom
-        ) {
-            Spacer(modifier = Modifier.weight(0.15f))
-            PlayerHand(
-                player = state.players[0],
-                state = state,
-                registry = registry,
-                onCardTapped = viewModel::onHumanCardTapped,
-                getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
-                modifier = Modifier.weight(0.70f).fillMaxHeight()
-            )
-            Spacer(modifier = Modifier.weight(0.15f))
+        Box(modifier = Modifier.fillMaxWidth().weight(0.38f)) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Spacer(modifier = Modifier.weight(0.15f))
+                PlayerHand(
+                    player = state.players[0],
+                    state = state,
+                    registry = registry,
+                    onCardTapped = viewModel::onHumanCardTapped,
+                    getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
+                    modifier = Modifier.weight(0.70f).fillMaxHeight()
+                )
+                Spacer(modifier = Modifier.weight(0.15f))
+            }
+            when {
+                0 in passedPlayers -> PassBubble(modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp))
+                activeIdx == state.players[0].id -> TurnArrow("▼", modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp))
+            }
         }
     }
 }
@@ -330,7 +393,9 @@ private fun ThreePlayerLayout(
 private fun FourPlayerLayout(
     state: GameState,
     registry: PositionRegistry,
-    viewModel: GameViewModel
+    viewModel: GameViewModel,
+    activeIdx: Int,
+    passedPlayers: Map<Int, Boolean>
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Top area: side AI + top AIs + center panel
@@ -341,7 +406,9 @@ private fun FourPlayerLayout(
             AiSideArea(
                 player = state.players[1],
                 state = state,
-                registry = registry
+                registry = registry,
+                isActive = activeIdx == state.players[1].id,
+                showPass = state.players[1].id in passedPlayers
             )
 
             BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxHeight()) {
@@ -360,6 +427,8 @@ private fun FourPlayerLayout(
                     player = state.players[2],
                     state = state,
                     registry = registry,
+                    isActive = activeIdx == state.players[2].id,
+                    showPass = state.players[2].id in passedPlayers,
                     modifier = Modifier
                         .width(CARD_HEIGHT * 0.8f + 20.dp)
                         .fillMaxHeight()
@@ -370,6 +439,8 @@ private fun FourPlayerLayout(
                     player = state.players[3],
                     state = state,
                     registry = registry,
+                    isActive = activeIdx == state.players[3].id,
+                    showPass = state.players[3].id in passedPlayers,
                     modifier = Modifier
                         .width(CARD_HEIGHT * 0.8f + 20.dp)
                         .fillMaxHeight()
@@ -379,20 +450,26 @@ private fun FourPlayerLayout(
         }
 
         // Hand row spans full screen width so centering is screen-relative
-        Row(
-            modifier = Modifier.fillMaxWidth().weight(0.38f),
-            verticalAlignment = Alignment.Bottom
-        ) {
-            Spacer(modifier = Modifier.weight(0.15f))
-            PlayerHand(
-                player = state.players[0],
-                state = state,
-                registry = registry,
-                onCardTapped = viewModel::onHumanCardTapped,
-                getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
-                modifier = Modifier.weight(0.70f).fillMaxHeight()
-            )
-            Spacer(modifier = Modifier.weight(0.15f))
+        Box(modifier = Modifier.fillMaxWidth().weight(0.38f)) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Spacer(modifier = Modifier.weight(0.15f))
+                PlayerHand(
+                    player = state.players[0],
+                    state = state,
+                    registry = registry,
+                    onCardTapped = viewModel::onHumanCardTapped,
+                    getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
+                    modifier = Modifier.weight(0.70f).fillMaxHeight()
+                )
+                Spacer(modifier = Modifier.weight(0.15f))
+            }
+            when {
+                0 in passedPlayers -> PassBubble(modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp))
+                activeIdx == state.players[0].id -> TurnArrow("▼", modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp))
+            }
         }
     }
 }
@@ -531,6 +608,8 @@ private fun handleAnimationEvent(
                 }
             }
         }
+
+        is AnimationEvent.PlayerPassed -> { /* handled in LaunchedEffect collector */ }
 
         is AnimationEvent.TableToPlayer -> {
             scope.launch {
