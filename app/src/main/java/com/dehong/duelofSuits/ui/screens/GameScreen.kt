@@ -249,15 +249,12 @@ private fun computeActiveIndex(state: GameState): Int = when (state.phase) {
     GamePhase.ATTACK_PHASE -> state.attackerIndex
     GamePhase.DEFENSE_PHASE -> state.defenderIndex
     GamePhase.THROW_IN_PHASE -> {
-        // Mirror runAiThrowIn's order: otherIndices first, then attacker.
-        // AI players (non-zero) act automatically; human (0) goes last.
-        val orderedAi = (state.otherIndices + listOf(state.attackerIndex))
-            .filter { it != 0 && it !in state.throwInPassedIndices }
-        when {
-            orderedAi.isNotEmpty() -> orderedAi.first()
-            0 in state.nonDefenderIndices && 0 !in state.throwInPassedIndices -> 0
-            else -> -1
-        }
+        val startIdx = (state.attackerIndex + 1) % state.playerCount
+        (0 until state.playerCount)
+            .map { (startIdx + it) % state.playerCount }
+            .filter { it != state.defenderIndex }
+            .firstOrNull { it !in state.throwInPassedIndices }
+            ?: -1
     }
     else -> -1
 }

@@ -51,7 +51,17 @@ data class GameState(
     val allSlotsDefended: Boolean get() = tableSlots.isNotEmpty() && undefendedSlots.isEmpty()
     val isHumanTurn: Boolean get() = when (phase) {
         GamePhase.ATTACK_PHASE -> attackerIndex == 0
-        GamePhase.THROW_IN_PHASE -> defenderIndex != 0 && 0 !in throwInPassedIndices
+        GamePhase.THROW_IN_PHASE -> {
+            if (defenderIndex == 0 || 0 in throwInPassedIndices) false
+            else {
+                val startIdx = (attackerIndex + 1) % playerCount
+                val nextPending = (0 until playerCount)
+                    .map { (startIdx + it) % playerCount }
+                    .filter { it != defenderIndex && it !in throwInPassedIndices }
+                    .firstOrNull()
+                nextPending == 0
+            }
+        }
         GamePhase.DEFENSE_PHASE -> defenderIndex == 0
         else -> false
     }

@@ -288,9 +288,12 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
 
         when (state.phase) {
             GamePhase.THROW_IN_PHASE -> {
-                val aiNonDefendersPending = state.nonDefenderIndices
-                    .filter { it != 0 && it !in state.throwInPassedIndices }
-                if (aiNonDefendersPending.isNotEmpty()) {
+                val startIdx = (state.attackerIndex + 1) % state.playerCount
+                val nextPlayer = (0 until state.playerCount)
+                    .map { (startIdx + it) % state.playerCount }
+                    .filter { it != state.defenderIndex }
+                    .firstOrNull { it !in state.throwInPassedIndices }
+                if (nextPlayer != null && nextPlayer != 0) {
                     viewModelScope.launch {
                         delay(800L)
                         runAiThrowIn(_gameState.value)
@@ -358,30 +361,39 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
     }
 
     private suspend fun runAiThrowIn(state: GameState) {
-        // others act before attacker; all must be AI players not yet passed
-        val orderedAiNonDefenders = (state.otherIndices + listOf(state.attackerIndex))
-            .filter { it != 0 }
+        val startIdx = (state.attackerIndex + 1) % state.playerCount
+        val throwInOrder = (0 until state.playerCount)
+            .map { (startIdx + it) % state.playerCount }
+            .filter { it != state.defenderIndex }
 
-        for (playerIdx in orderedAiNonDefenders) {
-            val currentState = _gameState.value
-            if (currentState.phase != GamePhase.THROW_IN_PHASE) break
-            if (currentState.animating) break
-            if (playerIdx in currentState.throwInPassedIndices) continue
+        val playerIdx = throwInOrder.firstOrNull { it !in state.throwInPassedIndices }
+        if (playerIdx == null || playerIdx == 0) {
+            delay(300L)
+            checkAndRunAiTurn()
+            return
+        }
 
-            val cards = AiPlayer.decideThrowInFromState(currentState, playerIdx)
-            if (cards.isEmpty()) {
-                val newState = GameEngine.processPass(playerIdx, currentState)
-                _gameState.value = newState
-                _animationEvents.emit(AnimationEvent.PlayerPassed(playerIdx))
-            } else {
-                val newState = GameEngine.processThrowIn(cards, playerIdx, currentState)
-                _gameState.value = newState.copy(animating = true)
-                delay(50L)
-                emitPlayCardAnimations(cards, playerIdx, currentState.tableSlots.size)
-                delay(300L * cards.size)
-                _gameState.value = _gameState.value.copy(animating = false)
-                delay(500L)
-            }
+        val currentState = _gameState.value
+        if (currentState.phase != GamePhase.THROW_IN_PHASE || currentState.animating) return
+        if (playerIdx in currentState.throwInPassedIndices) {
+            delay(300L)
+            checkAndRunAiTurn()
+            return
+        }
+
+        val cards = AiPlayer.decideThrowInFromState(currentState, playerIdx)
+        if (cards.isEmpty()) {
+            val newState = GameEngine.processPass(playerIdx, currentState)
+            _gameState.value = newState
+            _animationEvents.emit(AnimationEvent.PlayerPassed(playerIdx))
+        } else {
+            val newState = GameEngine.processThrowIn(cards, playerIdx, currentState)
+            _gameState.value = newState.copy(animating = true)
+            delay(50L)
+            emitPlayCardAnimations(cards, playerIdx, currentState.tableSlots.size)
+            delay(300L * cards.size)
+            _gameState.value = _gameState.value.copy(animating = false)
+            delay(500L)
         }
 
         delay(300L)
