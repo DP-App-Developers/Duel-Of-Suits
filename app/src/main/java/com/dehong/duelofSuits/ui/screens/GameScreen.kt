@@ -401,19 +401,14 @@ private fun FourPlayerLayout(
     activeIdx: Int,
     passedPlayers: Map<Int, String>
 ) {
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // Top area: side AI + top AIs + center panel
+        // Top area: top AIs + center panel (side AI overlaid separately)
         Row(
             modifier = Modifier.fillMaxWidth().weight(0.62f)
         ) {
-            // Clockwise from bottom: 0 (you) → 1 (left) → 2 (top-left) → 3 (top-right)
-            AiSideArea(
-                player = state.players[1],
-                state = state,
-                registry = registry,
-                isActive = activeIdx == state.players[1].id,
-                bubbleText = passedPlayers[state.players[1].id]
-            )
+            // Reserve horizontal space for the side AI overlay
+            Spacer(modifier = Modifier.width(CARD_HEIGHT * 0.8f + 20.dp))
 
             BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 val density = LocalDensity.current
@@ -476,6 +471,15 @@ private fun FourPlayerLayout(
             }
         }
     }
+    // AiSideArea overlaid at full screen height so its cards center vertically on screen
+    AiSideArea(
+        player = state.players[1],
+        state = state,
+        registry = registry,
+        isActive = activeIdx == state.players[1].id,
+        bubbleText = passedPlayers[state.players[1].id]
+    )
+    } // end outer Box
 }
 
 // ── Shared composables ───────────────────────────────────────────────────────
