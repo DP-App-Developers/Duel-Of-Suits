@@ -222,11 +222,9 @@ private fun TwoPlayerLayout(
     viewModel: GameViewModel
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // Top: single AI player centered
+        // AI hand centered at the top
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(0.45f),
+            modifier = Modifier.fillMaxWidth().weight(0.25f),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.Top
         ) {
@@ -234,15 +232,16 @@ private fun TwoPlayerLayout(
                 player = state.players[1],
                 state = state,
                 registry = registry,
-                modifier = Modifier.weight(0.35f).fillMaxHeight()
-            )
-            CenterPanel(
-                state = state,
-                registry = registry,
-                viewModel = viewModel,
-                modifier = Modifier.weight(0.65f).fillMaxHeight()
+                modifier = Modifier.fillMaxWidth(0.5f).fillMaxHeight()
             )
         }
+
+        CenterPanel(
+            state = state,
+            registry = registry,
+            viewModel = viewModel,
+            modifier = Modifier.fillMaxWidth().weight(0.30f)
+        )
 
         Row(
             modifier = Modifier.fillMaxWidth().weight(0.45f),
