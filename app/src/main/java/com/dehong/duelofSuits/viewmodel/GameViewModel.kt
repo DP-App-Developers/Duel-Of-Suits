@@ -446,6 +446,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
 
     private suspend fun resolveFailedDefenseFlow(state: GameState) {
         val allCards = state.tableSlots.flatMap { listOfNotNull(it.attackCard, it.defenseCard) }
+        _animationEvents.emit(AnimationEvent.PlayerTookCards(state.defenderIndex))
         _animationEvents.emit(AnimationEvent.TableToPlayer(state.defenderIndex, allCards))
         delay(500L)
         var newState = GameEngine.resolveFailedDefense(state)

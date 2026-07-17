@@ -71,4 +71,6 @@ sealed class AnimationEvent {
     data class TableToPlayer(val targetPlayerId: Int, val cards: List<Card>) : AnimationEvent()
 
     data class PlayerPassed(val playerIdx: Int) : AnimationEvent()
+
+    data class PlayerTookCards(val playerIdx: Int) : AnimationEvent()
 }

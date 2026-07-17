@@ -93,7 +93,7 @@ fun GameScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val registry = remember { PositionRegistry() }
     val flyingCards = remember { mutableStateListOf<FlyingCard>() }
-    val passedPlayers = remember { mutableStateMapOf<Int, Boolean>() }
+    val playerBubbles = remember { mutableStateMapOf<Int, String>() }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -108,10 +108,17 @@ fun GameScreen(
         viewModel.animationEvents.collect { event ->
             handleAnimationEvent(event, registry, flyingCards, scope)
             if (event is AnimationEvent.PlayerPassed) {
-                passedPlayers[event.playerIdx] = true
+                playerBubbles[event.playerIdx] = "PASS"
                 scope.launch {
                     delay(1200L)
-                    passedPlayers.remove(event.playerIdx)
+                    playerBubbles.remove(event.playerIdx)
+                }
+            }
+            if (event is AnimationEvent.PlayerTookCards) {
+                playerBubbles[event.playerIdx] = "TAKE"
+                scope.launch {
+                    delay(1500L)
+                    playerBubbles.remove(event.playerIdx)
                 }
             }
         }
@@ -148,7 +155,7 @@ fun GameScreen(
                         state = state,
                         registry = registry,
                         viewModel = viewModel,
-                        passedPlayers = passedPlayers
+                        passedPlayers = playerBubbles
                     )
 
                     // Draw pile anchored to the right edge
@@ -187,7 +194,7 @@ private fun GameLayout(
     state: GameState,
     registry: PositionRegistry,
     viewModel: GameViewModel,
-    passedPlayers: Map<Int, Boolean>
+    passedPlayers: Map<Int, String>
 ) {
     val actualActiveIdx = computeActiveIndex(state)
     // frozenActiveIdx holds the last non-animating active player, so the cursor
@@ -263,7 +270,7 @@ private fun TwoPlayerLayout(
     registry: PositionRegistry,
     viewModel: GameViewModel,
     activeIdx: Int,
-    passedPlayers: Map<Int, Boolean>
+    passedPlayers: Map<Int, String>
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // AI hand centered at the top
@@ -277,7 +284,7 @@ private fun TwoPlayerLayout(
                 state = state,
                 registry = registry,
                 isActive = activeIdx == state.players[1].id,
-                showPass = state.players[1].id in passedPlayers,
+                bubbleText = passedPlayers[state.players[1].id],
                 modifier = Modifier.fillMaxWidth(0.5f).fillMaxHeight()
             )
         }
@@ -306,7 +313,7 @@ private fun TwoPlayerLayout(
                 Spacer(modifier = Modifier.weight(0.15f))
             }
             when {
-                0 in passedPlayers -> PassBubble(modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp))
+                0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp))
                 activeIdx == state.players[0].id -> TurnArrow("▼", modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp))
             }
         }
@@ -321,7 +328,7 @@ private fun ThreePlayerLayout(
     registry: PositionRegistry,
     viewModel: GameViewModel,
     activeIdx: Int,
-    passedPlayers: Map<Int, Boolean>
+    passedPlayers: Map<Int, String>
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         BoxWithConstraints(
@@ -343,7 +350,7 @@ private fun ThreePlayerLayout(
                 state = state,
                 registry = registry,
                 isActive = activeIdx == state.players[1].id,
-                showPass = state.players[1].id in passedPlayers,
+                bubbleText = passedPlayers[state.players[1].id],
                 modifier = Modifier
                     .width(CARD_HEIGHT * 0.8f + 20.dp)
                     .fillMaxHeight()
@@ -355,7 +362,7 @@ private fun ThreePlayerLayout(
                 state = state,
                 registry = registry,
                 isActive = activeIdx == state.players[2].id,
-                showPass = state.players[2].id in passedPlayers,
+                bubbleText = passedPlayers[state.players[2].id],
                 modifier = Modifier
                     .width(CARD_HEIGHT * 0.8f + 20.dp)
                     .fillMaxHeight()
@@ -380,7 +387,7 @@ private fun ThreePlayerLayout(
                 Spacer(modifier = Modifier.weight(0.15f))
             }
             when {
-                0 in passedPlayers -> PassBubble(modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp))
+                0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp))
                 activeIdx == state.players[0].id -> TurnArrow("▼", modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp))
             }
         }
@@ -395,7 +402,7 @@ private fun FourPlayerLayout(
     registry: PositionRegistry,
     viewModel: GameViewModel,
     activeIdx: Int,
-    passedPlayers: Map<Int, Boolean>
+    passedPlayers: Map<Int, String>
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Top area: side AI + top AIs + center panel
@@ -408,7 +415,7 @@ private fun FourPlayerLayout(
                 state = state,
                 registry = registry,
                 isActive = activeIdx == state.players[1].id,
-                showPass = state.players[1].id in passedPlayers
+                bubbleText = passedPlayers[state.players[1].id]
             )
 
             BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxHeight()) {
@@ -428,7 +435,7 @@ private fun FourPlayerLayout(
                     state = state,
                     registry = registry,
                     isActive = activeIdx == state.players[2].id,
-                    showPass = state.players[2].id in passedPlayers,
+                    bubbleText = passedPlayers[state.players[2].id],
                     modifier = Modifier
                         .width(CARD_HEIGHT * 0.8f + 20.dp)
                         .fillMaxHeight()
@@ -440,7 +447,7 @@ private fun FourPlayerLayout(
                     state = state,
                     registry = registry,
                     isActive = activeIdx == state.players[3].id,
-                    showPass = state.players[3].id in passedPlayers,
+                    bubbleText = passedPlayers[state.players[3].id],
                     modifier = Modifier
                         .width(CARD_HEIGHT * 0.8f + 20.dp)
                         .fillMaxHeight()
@@ -467,7 +474,7 @@ private fun FourPlayerLayout(
                 Spacer(modifier = Modifier.weight(0.15f))
             }
             when {
-                0 in passedPlayers -> PassBubble(modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp))
+                0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp))
                 activeIdx == state.players[0].id -> TurnArrow("▼", modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp))
             }
         }
@@ -610,6 +617,7 @@ private fun handleAnimationEvent(
         }
 
         is AnimationEvent.PlayerPassed -> { /* handled in LaunchedEffect collector */ }
+        is AnimationEvent.PlayerTookCards -> { /* handled in LaunchedEffect collector */ }
 
         is AnimationEvent.TableToPlayer -> {
             scope.launch {

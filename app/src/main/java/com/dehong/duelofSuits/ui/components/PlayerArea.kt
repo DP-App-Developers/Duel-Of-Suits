@@ -82,7 +82,7 @@ private fun AiBadge(
 }
 
 @Composable
-internal fun PassBubble(modifier: Modifier = Modifier) {
+internal fun PassBubble(text: String = "PASS", modifier: Modifier = Modifier) {
     val bubbleShape = RoundedCornerShape(12.dp)
     Box(
         modifier = modifier
@@ -93,7 +93,7 @@ internal fun PassBubble(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "PASS",
+            text = text,
             color = Color.White.copy(alpha = 0.7f),
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
@@ -129,7 +129,7 @@ fun AiPlayerArea(
     state: GameState,
     registry: PositionRegistry,
     isActive: Boolean = false,
-    showPass: Boolean = false,
+    bubbleText: String? = null,
     modifier: Modifier = Modifier
 ) {
     val isDefender = state.defenderIndex == player.id
@@ -195,7 +195,7 @@ fun AiPlayerArea(
             )
         }
         when {
-            showPass -> PassBubble()
+            bubbleText != null -> PassBubble(text = bubbleText)
             isActive -> TurnArrow("▲")
         }
     }
@@ -208,7 +208,7 @@ fun AiSideArea(
     state: GameState,
     registry: PositionRegistry,
     isActive: Boolean = false,
-    showPass: Boolean = false,
+    bubbleText: String? = null,
     modifier: Modifier = Modifier
 ) {
     val isDefender = state.defenderIndex == player.id
@@ -270,7 +270,7 @@ fun AiSideArea(
             modifier = Modifier.align(Alignment.CenterEnd)
         )
         when {
-            showPass -> PassBubble(modifier = Modifier.align(Alignment.BottomCenter))
+            bubbleText != null -> PassBubble(text = bubbleText, modifier = Modifier.align(Alignment.BottomCenter))
             isActive -> TurnArrow("◀", modifier = Modifier.align(Alignment.BottomCenter))
         }
     }
