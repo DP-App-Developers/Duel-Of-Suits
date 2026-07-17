@@ -203,19 +203,31 @@ object GameEngine {
     fun applyJokerOnlyRule(state: GameState): GameState {
         val attacker = state.attacker
         if (state.drawPile.isNotEmpty()) return state
-        if (attacker.hand.isEmpty()) return state
-        if (!attacker.hand.all { it is Card.Joker }) return state
+        if (attacker.hand.isEmpty() || !attacker.hand.all { it is Card.Joker }) return state
         if (state.discardPile.isEmpty()) return state
 
         val toDraw = state.discardPile.shuffled().take(3)
-        val newDiscard = state.discardPile.filter { it !in toDraw }
         val updatedPlayers = state.players.toMutableList()
-        val p = updatedPlayers[state.attackerIndex]
-        updatedPlayers[state.attackerIndex] = p.copy(hand = p.hand + toDraw)
+        updatedPlayers[state.attackerIndex] = attacker.copy(hand = attacker.hand + toDraw)
         return state.copy(
             players = updatedPlayers,
-            discardPile = newDiscard,
+            discardPile = state.discardPile - toDraw.toSet(),
             message = "${attacker.name} has only Jokers — drew ${toDraw.size} cards from discard"
+        )
+    }
+
+    fun skipAttackerRound(state: GameState): GameState {
+        val nextAttacker = state.defenderIndex
+        val nextDefender = (nextAttacker + 1) % state.playerCount
+        return state.copy(
+            phase = GamePhase.ATTACK_PHASE,
+            attackerIndex = nextAttacker,
+            defenderIndex = nextDefender,
+            tableSlots = emptyList(),
+            selectedCards = emptySet(),
+            selectedHandCardForDefense = null,
+            throwInPassedIndices = emptySet(),
+            message = "${state.attacker.name} has only Jokers — attack skipped"
         )
     }
 

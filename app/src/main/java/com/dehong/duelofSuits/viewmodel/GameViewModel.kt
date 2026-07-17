@@ -306,7 +306,24 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
                 }
             }
             else -> {
-                if (state.isHumanTurn) return
+                if (state.isHumanTurn) {
+                    if (state.phase == GamePhase.ATTACK_PHASE &&
+                        state.attacker.hand.isNotEmpty() &&
+                        state.attacker.hand.all { it is Card.Joker }
+                    ) {
+                        viewModelScope.launch {
+                            val fixed = GameEngine.applyJokerOnlyRule(state)
+                            if (fixed !== state) {
+                                _gameState.value = fixed
+                            } else {
+                                delay(800L)
+                                _gameState.value = GameEngine.skipAttackerRound(state)
+                            }
+                            checkAndRunAiTurn()
+                        }
+                    }
+                    return
+                }
                 viewModelScope.launch {
                     delay(800L)
                     runAiAction()
@@ -340,12 +357,9 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
 
         val cards = AiPlayer.decideAttackFromState(currentState, attackerIdx)
         if (cards.isEmpty()) {
-            val newState = currentState.copy(
-                phase = GamePhase.GAME_OVER,
-                message = "No valid attack — game ends",
-                winnerId = -1
-            )
-            _gameState.value = newState
+            _gameState.value = GameEngine.skipAttackerRound(currentState)
+            delay(600L)
+            checkAndRunAiTurn()
             return
         }
 
@@ -448,8 +462,10 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             return
         }
 
-        _animationEvents.emit(AnimationEvent.DrawCardFromPile(replenishedState.attackerIndex, 1))
-        delay(600L)
+        if (resolvedState.drawPile.isNotEmpty()) {
+            _animationEvents.emit(AnimationEvent.DrawCardFromPile(replenishedState.attackerIndex, 1))
+            delay(600L)
+        }
         _gameState.value = replenishedState
 
         delay(400L)
