@@ -1,16 +1,15 @@
 package com.dehong.duelofSuits.ui.screens
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector2D
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.tween
-import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,17 +17,14 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -40,8 +36,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -58,9 +59,9 @@ import com.dehong.duelofSuits.ui.animation.PositionKey
 import com.dehong.duelofSuits.ui.animation.PositionRegistry
 import com.dehong.duelofSuits.ui.components.AiPlayerArea
 import com.dehong.duelofSuits.ui.components.AiSideArea
-import com.dehong.duelofSuits.ui.components.CardView
 import com.dehong.duelofSuits.ui.components.CARD_HEIGHT
 import com.dehong.duelofSuits.ui.components.CARD_WIDTH
+import com.dehong.duelofSuits.ui.components.CardView
 import com.dehong.duelofSuits.ui.components.DrawPile
 import com.dehong.duelofSuits.ui.components.GameInfoOverlay
 import com.dehong.duelofSuits.ui.components.GameTable
@@ -270,31 +271,38 @@ private fun ThreePlayerLayout(
     viewModel: GameViewModel
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(0.52f),
-            verticalAlignment = Alignment.Top
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth().weight(0.52f)
         ) {
-            AiPlayerArea(
-                player = state.players[1],
-                state = state,
-                registry = registry,
-                modifier = Modifier.weight(0.22f).fillMaxHeight()
-            )
+            val density = LocalDensity.current
+            val availWidth = constraints.maxWidth
+            val playerWidthPx = with(density) { (CARD_HEIGHT * 0.8f + 20.dp).toPx() }
 
             CenterPanel(
                 state = state,
                 registry = registry,
                 viewModel = viewModel,
-                modifier = Modifier.weight(0.56f).fillMaxHeight()
+                modifier = Modifier.fillMaxSize()
+            )
+
+            AiPlayerArea(
+                player = state.players[1],
+                state = state,
+                registry = registry,
+                modifier = Modifier
+                    .width(CARD_HEIGHT * 0.8f + 20.dp)
+                    .fillMaxHeight()
+                    .offset { IntOffset((availWidth * 0.25f - playerWidthPx / 2f).roundToInt(), 0) }
             )
 
             AiPlayerArea(
                 player = state.players[2],
                 state = state,
                 registry = registry,
-                modifier = Modifier.weight(0.22f).fillMaxHeight()
+                modifier = Modifier
+                    .width(CARD_HEIGHT * 0.8f + 20.dp)
+                    .fillMaxHeight()
+                    .offset { IntOffset((availWidth * 0.75f - playerWidthPx / 2f).roundToInt(), 0) }
             )
         }
 
@@ -335,32 +343,37 @@ private fun FourPlayerLayout(
                 registry = registry
             )
 
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().fillMaxHeight(),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    AiPlayerArea(
-                        player = state.players[1],
-                        state = state,
-                        registry = registry,
-                        modifier = Modifier.weight(0.25f).fillMaxHeight()
-                    )
+            BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                val density = LocalDensity.current
+                val availWidth = constraints.maxWidth
+                val playerWidthPx = with(density) { (CARD_HEIGHT * 0.8f + 20.dp).toPx() }
 
-                    CenterPanel(
-                        state = state,
-                        registry = registry,
-                        viewModel = viewModel,
-                        modifier = Modifier.weight(0.50f).fillMaxHeight()
-                    )
+                CenterPanel(
+                    state = state,
+                    registry = registry,
+                    viewModel = viewModel,
+                    modifier = Modifier.fillMaxSize()
+                )
 
-                    AiPlayerArea(
-                        player = state.players[2],
-                        state = state,
-                        registry = registry,
-                        modifier = Modifier.weight(0.25f).fillMaxHeight()
-                    )
-                }
+                AiPlayerArea(
+                    player = state.players[1],
+                    state = state,
+                    registry = registry,
+                    modifier = Modifier
+                        .width(CARD_HEIGHT * 0.8f + 20.dp)
+                        .fillMaxHeight()
+                        .offset { IntOffset((availWidth * 0.25f - playerWidthPx / 2f).roundToInt(), 0) }
+                )
+
+                AiPlayerArea(
+                    player = state.players[2],
+                    state = state,
+                    registry = registry,
+                    modifier = Modifier
+                        .width(CARD_HEIGHT * 0.8f + 20.dp)
+                        .fillMaxHeight()
+                        .offset { IntOffset((availWidth * 0.75f - playerWidthPx / 2f).roundToInt(), 0) }
+                )
             }
         }
 

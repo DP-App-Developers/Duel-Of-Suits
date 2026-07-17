@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -74,8 +73,7 @@ fun AiPlayerArea(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(CARD_HEIGHT * 0.8f)
-                .clipToBounds(),
+                .height(CARD_HEIGHT * 0.8f),
             contentAlignment = Alignment.TopCenter
         ) {
             Box(
