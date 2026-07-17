@@ -40,18 +40,18 @@ import com.dehong.duelofSuits.ui.theme.CounterBackground
 import com.dehong.duelofSuits.ui.theme.TextOnDark
 import kotlin.math.roundToInt
 
-private val SUIT_ORDER = mapOf(
-    Suit.DIAMONDS to 0,
-    Suit.CLUBS to 1,
-    Suit.HEARTS to 2,
-    Suit.SPADES to 3
-)
+private fun suitOrder(trump: Suit): Map<Suit, Int> = when (trump) {
+    Suit.SPADES   -> mapOf(Suit.DIAMONDS to 0, Suit.CLUBS to 1, Suit.HEARTS to 2, Suit.SPADES to 3)
+    Suit.HEARTS   -> mapOf(Suit.CLUBS to 0, Suit.DIAMONDS to 1, Suit.SPADES to 2, Suit.HEARTS to 3)
+    Suit.DIAMONDS -> mapOf(Suit.CLUBS to 0, Suit.HEARTS to 1, Suit.SPADES to 2, Suit.DIAMONDS to 3)
+    Suit.CLUBS    -> mapOf(Suit.DIAMONDS to 0, Suit.SPADES to 1, Suit.HEARTS to 2, Suit.CLUBS to 3)
+}
 
-private fun sortedHand(hand: List<Card>): List<Card> = hand.sortedWith(
+private fun sortedHand(hand: List<Card>, trump: Suit): List<Card> = hand.sortedWith(
     compareBy(
         { card ->
             when (card) {
-                is Card.SuitedCard -> SUIT_ORDER[card.suit] ?: 4
+                is Card.SuitedCard -> suitOrder(trump)[card.suit] ?: 4
                 is Card.Joker -> 4
             }
         },
@@ -73,7 +73,7 @@ fun PlayerHand(
     getSelectionState: (Card) -> CardSelectionState,
     modifier: Modifier = Modifier
 ) {
-    val hand = sortedHand(player.hand)
+    val hand = sortedHand(player.hand, state.trumpSuit)
     val n = hand.size
     val density = LocalDensity.current
 
