@@ -93,8 +93,6 @@ fun PlayerHand(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            HandCountBadge(player = player, state = state, modifier = Modifier.padding(bottom = 4.dp))
-
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
