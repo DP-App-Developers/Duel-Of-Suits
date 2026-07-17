@@ -70,8 +70,7 @@ fun AiPlayerArea(
     ) {
         val faceDownCards = minOf(player.hand.size, 8)
 
-        // Card fan at the very top — top 20% hangs off the screen edge.
-        // Cards rotate around their bottom-center so the fan arcs naturally.
+        // Mirror of AiSideArea: portrait cards fanned horizontally, top 20% cropped off screen.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -79,7 +78,6 @@ fun AiPlayerArea(
                 .clipToBounds(),
             contentAlignment = Alignment.TopCenter
         ) {
-            // Registration anchor always present regardless of hand size
             Box(
                 modifier = Modifier
                     .size(CARD_WIDTH, CARD_HEIGHT)
@@ -96,14 +94,12 @@ fun AiPlayerArea(
                         card = Card.SuitedCard(Suit.SPADES, Rank.ACE),
                         faceDown = true,
                         modifier = Modifier
+                            .offset(x = (cardOffset * 14).dp)
                             .offset { IntOffset(0, -(CARD_HEIGHT * 0.2f).roundToPx()) }
                             .zIndex(idx.toFloat())
                             .graphicsLayer {
-                                // All cards share the same top-center pivot (the hidden grip).
-                                // No x-spread: every card's top is at the same point, so the
-                                // bottoms fan outward naturally like a hand held from above.
-                                rotationZ = cardOffset * 8f
-                                transformOrigin = TransformOrigin(0.5f, 0.0f)
+                                rotationZ = -(cardOffset * 4f)
+                                transformOrigin = TransformOrigin(0.5f, 0.5f)
                             }
                             .size(CARD_WIDTH, CARD_HEIGHT)
                     )
