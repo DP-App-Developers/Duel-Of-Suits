@@ -83,9 +83,11 @@ fun PlayerHand(
     ) {
         val availableWidthPx = constraints.maxWidth.toFloat()
         val cardWidthPx = with(density) { CARD_WIDTH.toPx() }
-        // For 1 card: center it. For n cards: left edge at 0, right edge flush to end.
-        val startX = if (n <= 1) (availableWidthPx - cardWidthPx) / 2f else 0f
-        val step = if (n <= 1) 0f else (availableWidthPx - cardWidthPx) / (n - 1)
+        val desiredStepPx = with(density) { 38.dp.toPx() }
+        // Cards overlap with a fixed step, clamped so they always fit the container.
+        val step = if (n <= 1) 0f else minOf(desiredStepPx, (availableWidthPx - cardWidthPx) / (n - 1))
+        val totalWidthPx = if (n <= 1) cardWidthPx else cardWidthPx + (n - 1) * step
+        val startX = (availableWidthPx - totalWidthPx) / 2f
 
         Column(
             modifier = Modifier.fillMaxWidth(),
