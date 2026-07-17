@@ -513,7 +513,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
     // ── Selection State Helpers ─────────────────────────────────────────────
 
     fun getCardSelectionState(card: Card, state: GameState): CardSelectionState {
-        if (!state.isHumanTurn) return CardSelectionState.NORMAL
+        if (!state.isHumanTurn) return CardSelectionState.DISABLED
         return when (state.phase) {
             GamePhase.ATTACK_PHASE -> {
                 when {
