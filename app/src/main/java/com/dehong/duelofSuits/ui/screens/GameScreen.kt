@@ -108,6 +108,14 @@ fun GameScreen(
         }
     }
 
+    // When the deal phase ends, the real hand is now populated.
+    // Clear any deal cards that were kept at the landing spot so the fan-out takes over.
+    LaunchedEffect(state.phase) {
+        if (state.phase != GamePhase.DEALING) {
+            flyingCards.removeAll { it.id.startsWith("deal_0_") }
+        }
+    }
+
     val cardWidth  = (LocalConfiguration.current.screenWidthDp / 12f).dp
     val cardHeight = cardWidth * (CARD_HEIGHT.value / CARD_WIDTH.value)
     val density = LocalDensity.current
@@ -591,7 +599,9 @@ private fun handleAnimationEvent(
                     from = startOffset,
                     to = endOffset,
                     durationMs = 500,
-                    flyingCards = flyingCards
+                    flyingCards = flyingCards,
+                    // Player 0 cards stay visible at the landing spot until the real hand populates
+                    removeAfter = event.targetPlayerId != 0
                 )
             }
         }
@@ -708,7 +718,8 @@ private suspend fun animateCard(
     from: Offset,
     to: Offset,
     durationMs: Int,
-    flyingCards: MutableList<FlyingCard>
+    flyingCards: MutableList<FlyingCard>,
+    removeAfter: Boolean = true
 ) {
     val animatable = Animatable(from, Offset.VectorConverter)
     val flying = FlyingCard(
@@ -719,7 +730,7 @@ private suspend fun animateCard(
     )
     flyingCards.add(flying)
     animatable.animateTo(to, animationSpec = tween(durationMs, easing = FastOutSlowInEasing))
-    flyingCards.remove(flying)
+    if (removeAfter) flyingCards.remove(flying)
 }
 
 

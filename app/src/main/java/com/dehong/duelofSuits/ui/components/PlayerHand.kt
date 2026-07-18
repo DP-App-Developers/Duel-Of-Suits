@@ -88,18 +88,23 @@ fun PlayerHand(
     val spreadFactor = remember { Animatable(0f) }
     val prevHandSize = remember { mutableIntStateOf(hand.size) }
 
-    LaunchedEffect(hand.size) {
+    LaunchedEffect(hand.size, state.animating) {
         val prev = prevHandSize.intValue
         prevHandSize.intValue = hand.size
         when {
-            hand.size == 0 -> spreadFactor.snapTo(0f)   // reset between games
-            hand.size > prev -> {
-                // Cards received — snap to collapsed center, then fan out
+            hand.size == 0 -> spreadFactor.snapTo(0f)
+            hand.size > prev && state.animating -> {
+                // Cards arriving mid-deal — stay collapsed so flying cards land seamlessly
                 spreadFactor.snapTo(0f)
-                spreadFactor.animateTo(
-                    targetValue = 1f,
-                    animationSpec = tween(durationMillis = 460, easing = FastOutSlowInEasing)
-                )
+            }
+            hand.size > prev && !state.animating -> {
+                // Card added with no animation in flight — fan out immediately
+                spreadFactor.snapTo(0f)
+                spreadFactor.animateTo(1f, tween(460, easing = FastOutSlowInEasing))
+            }
+            !state.animating && spreadFactor.value < 0.01f && hand.size > 0 -> {
+                // Deal just finished — fan out now
+                spreadFactor.animateTo(1f, tween(460, easing = FastOutSlowInEasing))
             }
         }
     }
@@ -132,7 +137,8 @@ fun PlayerHand(
                     }
             ) {
                 hand.forEachIndexed { idx, card ->
-                    val selState = getSelectionState(card)
+                    // During deal/fan-out, keep cards fully visible regardless of game phase
+                    val selState = if (spread < 1f) CardSelectionState.NORMAL else getSelectionState(card)
                     val finalX = startX + idx * step
                     // Interpolate from center to final fan position
                     val xPx = (centerX + (finalX - centerX) * spread).roundToInt()
@@ -157,9 +163,11 @@ fun PlayerHand(
             }
         }
 
-        // Invisible anchor: horizontally centered, vertically at the top of the card fan
+        // Invisible anchor at the top-left of the center card when spreadFactor=0:
+        // x offset = -cardWidth/2 shifts from boxCenter to card top-left (centerX = (boxWidth-cardWidth)/2)
+        // y offset = -cardHeight*0.8f shifts from panel bottom to card top
         Box(modifier = Modifier
-            .offset(y = -(cardHeight * 0.8f))
+            .offset(x = -(cardWidth / 2), y = -(cardHeight * 0.8f))
             .onGloballyPositioned { registry.register(PositionKey.HumanHandCenter, it) }
         )
     }
