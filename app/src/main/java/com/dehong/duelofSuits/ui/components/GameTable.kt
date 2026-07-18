@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +32,7 @@ import com.dehong.duelofSuits.model.CardSelectionState
 import com.dehong.duelofSuits.model.GamePhase
 import com.dehong.duelofSuits.model.GameState
 import com.dehong.duelofSuits.model.TableSlot
+import com.dehong.duelofSuits.ui.animation.LocalFlyingCards
 import com.dehong.duelofSuits.ui.animation.PositionKey
 import com.dehong.duelofSuits.ui.animation.PositionRegistry
 import com.dehong.duelofSuits.ui.theme.HighlightCyan
@@ -51,7 +53,10 @@ fun GameTable(
         Box(
             modifier = modifier
                 .fillMaxWidth()
-                .height(CARD_HEIGHT + 20.dp),
+                .height(CARD_HEIGHT + 20.dp)
+                .onGloballyPositioned { coords ->
+                    registry.register(PositionKey.TableArea, coords)
+                },
             contentAlignment = Alignment.Center
         ) {
         }
@@ -62,7 +67,10 @@ fun GameTable(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp),
+            .padding(horizontal = 8.dp)
+            .onGloballyPositioned { coords ->
+                registry.register(PositionKey.TableArea, coords)
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
         itemsIndexed(slots) { index, slot ->
@@ -90,6 +98,7 @@ private fun TableSlotView(
     val canDefendThisSlot = isHumanDefender && slot.defenseCard == null &&
             selectedHandCard != null &&
             GameEngine.canDefend(slot.attackCard, selectedHandCard, state.trumpSuit)
+    val flyingCards = LocalFlyingCards.current
 
     Box(
         modifier = Modifier.size(CARD_WIDTH + DEFENSE_X, CARD_HEIGHT + DEFENSE_Y)
@@ -98,6 +107,7 @@ private fun TableSlotView(
             card = slot.attackCard,
             modifier = Modifier
                 .align(Alignment.TopStart)
+                .alpha(if (slot.attackCard in flyingCards) 0f else 1f)
                 .onGloballyPositioned { coords ->
                     registry.register(PositionKey.AttackSlot(slotIndex), coords)
                 }
@@ -110,6 +120,7 @@ private fun TableSlotView(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .offset(x = DEFENSE_X, y = DEFENSE_Y)
+                    .alpha(if (slot.defenseCard in flyingCards) 0f else 1f)
                     .onGloballyPositioned { coords ->
                         registry.register(PositionKey.DefenseSlot(slotIndex), coords)
                     }

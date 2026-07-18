@@ -58,6 +58,7 @@ import com.dehong.duelofSuits.model.Rank
 import com.dehong.duelofSuits.model.Suit
 import com.dehong.duelofSuits.ui.animation.AnimationEvent
 import com.dehong.duelofSuits.ui.animation.FlyingCard
+import com.dehong.duelofSuits.ui.animation.LocalFlyingCards
 import com.dehong.duelofSuits.ui.animation.PositionKey
 import com.dehong.duelofSuits.ui.animation.PositionRegistry
 import com.dehong.duelofSuits.ui.components.AiPlayerArea
@@ -104,9 +105,10 @@ fun GameScreen(
         }
     }
 
+    val density = LocalDensity.current
     LaunchedEffect(Unit) {
         viewModel.animationEvents.collect { event ->
-            handleAnimationEvent(event, registry, flyingCards, scope)
+            handleAnimationEvent(event, registry, flyingCards, scope, density)
             if (event is AnimationEvent.PlayerPassed) {
                 playerBubbles[event.playerIdx] = "PASS"
                 scope.launch {
@@ -124,7 +126,10 @@ fun GameScreen(
         }
     }
 
-    CompositionLocalProvider(LocalPositionRegistry provides registry) {
+    CompositionLocalProvider(
+        LocalPositionRegistry provides registry,
+        LocalFlyingCards provides flyingCards.map { it.card }.toSet()
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -525,11 +530,34 @@ private fun FlyingCardLayer(flyingCards: List<FlyingCard>) {
     }
 }
 
+// Each slot in GameTable's LazyRow occupies (CARD_WIDTH + 20.dp) plus 12.dp spacing.
+// Used to extrapolate the position of a slot not yet rendered.
+private fun estimateAttackSlotOffset(
+    slotIndex: Int,
+    registry: PositionRegistry,
+    density: androidx.compose.ui.unit.Density
+): Offset {
+    val slotStepPx = with(density) { (CARD_WIDTH + 20.dp + 12.dp).toPx() }
+    // Walk backwards to find the nearest registered slot and extrapolate
+    for (i in slotIndex - 1 downTo 0) {
+        val known = registry.getOffset(PositionKey.AttackSlot(i))
+        if (known != Offset.Zero) return known + Offset((slotIndex - i) * slotStepPx, 0f)
+    }
+    // No existing slots: estimate from the table container's top-left + left padding
+    val tableArea = registry.getOffset(PositionKey.TableArea)
+    if (tableArea != Offset.Zero) {
+        val leftPaddingPx = with(density) { 8.dp.toPx() }
+        return tableArea + Offset(leftPaddingPx + slotIndex * slotStepPx, 0f)
+    }
+    return registry.getOffset(PositionKey.DrawPile)
+}
+
 private fun handleAnimationEvent(
     event: AnimationEvent,
     registry: PositionRegistry,
     flyingCards: MutableList<FlyingCard>,
-    scope: kotlinx.coroutines.CoroutineScope
+    scope: kotlinx.coroutines.CoroutineScope,
+    density: androidx.compose.ui.unit.Density
 ) {
     when (event) {
         is AnimationEvent.DealCard -> {
@@ -559,7 +587,7 @@ private fun handleAnimationEvent(
                     ?: registry.getOffset(PositionKey.PlayerArea(event.fromPlayerId))
                 val endOffset = registry.getOffset(PositionKey.AttackSlot(event.toSlotIndex))
                     .takeIf { it != Offset.Zero }
-                    ?: registry.getOffset(PositionKey.DrawPile)
+                    ?: estimateAttackSlotOffset(event.toSlotIndex, registry, density)
 
                 animateCard(
                     id = "play_${event.card.hashCode()}",

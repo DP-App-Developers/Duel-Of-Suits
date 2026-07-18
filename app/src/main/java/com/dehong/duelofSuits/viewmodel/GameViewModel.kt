@@ -180,11 +180,18 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
         }
         if (validSlots.size == 1) {
             val attackCard = validSlots[0].attackCard
+            val slotIdx = state.tableSlots.indexOf(validSlots[0])
             val newState = GameEngine.processDefenseCard(attackCard, card, 0, state)
-            val updated = newState.copy(selectedHandCardForDefense = null)
-            _gameState.value = updated
-            emitDefenseCardAnimation(card, 0, state.tableSlots.indexOf(validSlots[0]))
-            if (updated.allSlotsDefended) autoAdvanceDefense()
+            val updatedPlayers = state.players.toMutableList()
+            updatedPlayers[0] = updatedPlayers[0].copy(hand = updatedPlayers[0].hand - setOf(card))
+            _gameState.value = state.copy(players = updatedPlayers, selectedHandCardForDefense = null, animating = true)
+            emitDefenseCardAnimation(card, 0, slotIdx)
+            viewModelScope.launch {
+                delay(500L)
+                val finalState = newState.copy(selectedHandCardForDefense = null, animating = false)
+                _gameState.value = finalState
+                if (finalState.allSlotsDefended) autoAdvanceDefense()
+            }
         } else {
             _gameState.value = state.copy(selectedHandCardForDefense = card)
         }
@@ -201,10 +208,16 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             return
         }
         val newState = GameEngine.processDefenseCard(slot.attackCard, selectedCard, 0, state)
-        val updated = newState.copy(selectedHandCardForDefense = null)
-        _gameState.value = updated
+        val updatedPlayers = state.players.toMutableList()
+        updatedPlayers[0] = updatedPlayers[0].copy(hand = updatedPlayers[0].hand - setOf(selectedCard))
+        _gameState.value = state.copy(players = updatedPlayers, selectedHandCardForDefense = null, animating = true)
         emitDefenseCardAnimation(selectedCard, 0, slotIndex)
-        if (updated.allSlotsDefended) autoAdvanceDefense()
+        viewModelScope.launch {
+            delay(500L)
+            val finalState = newState.copy(selectedHandCardForDefense = null, animating = false)
+            _gameState.value = finalState
+            if (finalState.allSlotsDefended) autoAdvanceDefense()
+        }
     }
 
     fun onPlaySelectedPressed() {
@@ -219,11 +232,10 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
                 if (error != null) { _errorMessage.value = error; return }
                 viewModelScope.launch {
                     val newState = GameEngine.processAttack(selected, 0, state)
-                    _gameState.value = newState.copy(animating = true)
-                    delay(50L)
+                    _gameState.value = state.copy(players = newState.players, selectedCards = emptySet(), animating = true)
                     emitPlayCardAnimations(selected, 0, state.tableSlots.size)
-                    delay(300L * selected.size)
-                    _gameState.value = _gameState.value.copy(animating = false)
+                    delay(200L * (selected.size - 1) + 500L)
+                    _gameState.value = newState.copy(animating = false)
                     checkAndRunAiTurn()
                 }
             }
@@ -233,11 +245,10 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
                 if (error != null) { _errorMessage.value = error; return }
                 viewModelScope.launch {
                     val newState = GameEngine.processThrowIn(selected, 0, state)
-                    _gameState.value = newState.copy(animating = true)
-                    delay(50L)
+                    _gameState.value = state.copy(players = newState.players, selectedCards = emptySet(), animating = true)
                     emitPlayCardAnimations(selected, 0, state.tableSlots.size)
-                    delay(300L * selected.size)
-                    _gameState.value = _gameState.value.copy(animating = false)
+                    delay(200L * (selected.size - 1) + 500L)
+                    _gameState.value = newState.copy(animating = false)
                     checkAndRunAiTurn()
                 }
             }
@@ -364,11 +375,10 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
         }
 
         val newState = GameEngine.processAttack(cards, attackerIdx, currentState)
-        _gameState.value = newState.copy(animating = true)
-        delay(50L)
+        _gameState.value = currentState.copy(players = newState.players, selectedCards = emptySet(), animating = true)
         emitPlayCardAnimations(cards, attackerIdx, currentState.tableSlots.size)
-        delay(300L * cards.size)
-        _gameState.value = _gameState.value.copy(animating = false)
+        delay(200L * (cards.size - 1) + 500L)
+        _gameState.value = newState.copy(animating = false)
 
         delay(600L)
         checkAndRunAiTurn()
@@ -402,11 +412,10 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             _animationEvents.emit(AnimationEvent.PlayerPassed(playerIdx))
         } else {
             val newState = GameEngine.processThrowIn(cards, playerIdx, currentState)
-            _gameState.value = newState.copy(animating = true)
-            delay(50L)
+            _gameState.value = currentState.copy(players = newState.players, selectedCards = emptySet(), animating = true)
             emitPlayCardAnimations(cards, playerIdx, currentState.tableSlots.size)
-            delay(300L * cards.size)
-            _gameState.value = _gameState.value.copy(animating = false)
+            delay(200L * (cards.size - 1) + 500L)
+            _gameState.value = newState.copy(animating = false)
             delay(500L)
         }
 
