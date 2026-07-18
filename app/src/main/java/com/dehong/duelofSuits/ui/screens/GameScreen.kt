@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -121,7 +122,7 @@ fun GameScreen(
     val density = LocalDensity.current
     LaunchedEffect(Unit) {
         viewModel.animationEvents.collect { event ->
-            handleAnimationEvent(event, registry, flyingCards, scope, density, cardWidth)
+            handleAnimationEvent(event, registry, flyingCards, scope, density, cardWidth, playerCount)
             if (event is AnimationEvent.PlayerPassed) {
                 playerBubbles[event.playerIdx] = "PASS"
                 scope.launch {
@@ -543,6 +544,7 @@ private fun FlyingCardLayer(flyingCards: List<FlyingCard>) {
                         offset.y.roundToInt()
                     )
                 }
+                .graphicsLayer { rotationZ = flying.rotation }
         )
     }
 }
@@ -577,7 +579,8 @@ private fun handleAnimationEvent(
     flyingCards: MutableList<FlyingCard>,
     scope: kotlinx.coroutines.CoroutineScope,
     density: androidx.compose.ui.unit.Density,
-    cardWidth: androidx.compose.ui.unit.Dp
+    cardWidth: androidx.compose.ui.unit.Dp,
+    playerCount: Int
 ) {
     when (event) {
         is AnimationEvent.DealCard -> {
@@ -592,6 +595,8 @@ private fun handleAnimationEvent(
                 val endOffset = registry.getOffset(endKey)
                     .takeIf { it != Offset.Zero } ?: startOffset
 
+                // In 4-player mode player 1 sits at the left edge — cards are horizontal
+                val dealRotation = if (playerCount == 4 && event.targetPlayerId == 1) 90f else 0f
                 animateCard(
                     id = "deal_${event.targetPlayerId}_${event.cardIndex}",
                     card = event.card,
@@ -600,8 +605,8 @@ private fun handleAnimationEvent(
                     to = endOffset,
                     durationMs = 500,
                     flyingCards = flyingCards,
-                    // All deal cards stay visible at the landing spot until the real hands populate
-                    removeAfter = false
+                    removeAfter = false,
+                    rotation = dealRotation
                 )
             }
         }
@@ -719,14 +724,16 @@ private suspend fun animateCard(
     to: Offset,
     durationMs: Int,
     flyingCards: MutableList<FlyingCard>,
-    removeAfter: Boolean = true
+    removeAfter: Boolean = true,
+    rotation: Float = 0f
 ) {
     val animatable = Animatable(from, Offset.VectorConverter)
     val flying = FlyingCard(
         id = id,
         card = card,
         faceDown = faceDown,
-        animatable = animatable
+        animatable = animatable,
+        rotation = rotation
     )
     flyingCards.add(flying)
     animatable.animateTo(to, animationSpec = tween(durationMs, easing = FastOutSlowInEasing))

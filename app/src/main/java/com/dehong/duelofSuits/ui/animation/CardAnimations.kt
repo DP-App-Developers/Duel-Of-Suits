@@ -47,7 +47,8 @@ class FlyingCard(
     val id: String,
     val card: Card,
     val faceDown: Boolean,
-    val animatable: Animatable<Offset, AnimationVector2D>
+    val animatable: Animatable<Offset, AnimationVector2D>,
+    val rotation: Float = 0f
 )
 
 sealed class AnimationEvent {
