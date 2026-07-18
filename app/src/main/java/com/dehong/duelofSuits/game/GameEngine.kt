@@ -146,7 +146,7 @@ object GameEngine {
             skipNextAttack = true
         )
         val candidateNextAttacker = (state.defenderIndex + 1) % state.playerCount
-        val (nextAttackerIdx, nextDefenderIdx) = resolveNextRoles(updatedPlayers.toList(), candidateNextAttacker, state.playerCount)
+        val (nextAttackerIdx, nextDefenderIdx) = resolveNextRoles(updatedPlayers, candidateNextAttacker, state.playerCount)
         return state.copy(
             players = updatedPlayers,
             tableSlots = emptyList(),
@@ -187,12 +187,11 @@ object GameEngine {
         )
     }
 
-    private fun resolveNextRoles(players: List<Player>, candidateAttackerIdx: Int, playerCount: Int): Pair<Int, Int> {
-        val mutablePlayers = players.toMutableList()
+    private fun resolveNextRoles(players: MutableList<Player>, candidateAttackerIdx: Int, playerCount: Int): Pair<Int, Int> {
         var attackerIdx = candidateAttackerIdx
         var checked = 0
-        while (mutablePlayers[attackerIdx].skipNextAttack && checked < playerCount) {
-            mutablePlayers[attackerIdx] = mutablePlayers[attackerIdx].copy(skipNextAttack = false)
+        while (players[attackerIdx].skipNextAttack && checked < playerCount) {
+            players[attackerIdx] = players[attackerIdx].copy(skipNextAttack = false)
             attackerIdx = (attackerIdx + 1) % playerCount
             checked++
         }
