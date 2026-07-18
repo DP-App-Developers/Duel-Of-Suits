@@ -266,14 +266,15 @@ fun AiSideArea(
             }
         }
 
-        AiBadge(
-            count = player.hand.size,
-            roleColor = roleColor,
-            modifier = Modifier.align(Alignment.CenterEnd)
-        )
-        when {
-            bubbleText != null -> PassBubble(text = bubbleText, modifier = Modifier.align(Alignment.BottomCenter))
-            isActive -> TurnArrow("◀", modifier = Modifier.align(Alignment.BottomCenter))
+        Column(
+            modifier = Modifier.align(Alignment.CenterEnd),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            AiBadge(count = player.hand.size, roleColor = roleColor)
+            when {
+                bubbleText != null -> PassBubble(text = bubbleText)
+                isActive -> TurnArrow("◀")
+            }
         }
     }
 }
