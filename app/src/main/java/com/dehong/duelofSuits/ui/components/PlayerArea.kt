@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -29,10 +30,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -104,23 +111,95 @@ internal fun PassBubble(text: String = "PASS", modifier: Modifier = Modifier) {
 
 @Composable
 internal fun TurnArrow(char: String, modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "turnArrow")
-    val alpha by transition.animateFloat(
-        initialValue = 0.35f,
+    val density = LocalDensity.current
+    val transition = rememberInfiniteTransition(label = "cursor")
+
+    val pulse by transition.animateFloat(
+        initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(650, easing = FastOutSlowInEasing),
+            animation = tween(750, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "arrowAlpha"
+        label = "pulse"
     )
-    Text(
-        text = char,
-        color = Color.White.copy(alpha = alpha),
-        fontSize = 18.sp,
-        fontWeight = FontWeight.Bold,
+
+    val scale     = 0.88f + pulse * 0.22f   // breathes 0.88 → 1.10
+    val glowAlpha = 0.18f + pulse * 0.52f
+    val coreAlpha = 0.72f + pulse * 0.28f
+    val bouncePx  = with(density) { (pulse * 4f).dp.toPx() }
+
+    // Arrow path points UP by default; rotate to match direction
+    val rotation = when (char) { "▼" -> 180f; "◀" -> 270f; "▶" -> 90f; else -> 0f }
+    val txPx = when (char) { "◀" -> -bouncePx; "▶" -> bouncePx; else -> 0f }
+    val tyPx = when (char) { "▲" -> -bouncePx; "▼" -> bouncePx; else -> 0f }
+
+    val gold1 = Color(0xFFFFF8CC)   // near-white highlight at tip
+    val gold2 = Color(0xFFC9A227)   // mid gold
+    val gold3 = Color(0xFF7A5100)   // deep amber at base
+
+    Canvas(
         modifier = modifier
-    )
+            .size(30.dp, 36.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                rotationZ = rotation
+                translationX = txPx
+                translationY = tyPx
+            }
+    ) {
+        val w = size.width
+        val h = size.height
+
+        // Game-style chevron: pointed tip + swept wings + notched stem
+        val path = Path().apply {
+            moveTo(w * 0.50f, 0f        )   // tip
+            lineTo(w * 1.00f, h * 0.54f)   // right wing
+            lineTo(w * 0.64f, h * 0.46f)   // right notch
+            lineTo(w * 0.64f, h * 1.00f)   // right base
+            lineTo(w * 0.36f, h * 1.00f)   // left base
+            lineTo(w * 0.36f, h * 0.46f)   // left notch
+            lineTo(w * 0.00f, h * 0.54f)   // left wing
+            close()
+        }
+
+        // Soft glow halos radiating outward from the arrow
+        for (ring in 4 downTo 1) {
+            val ex = (ring * 5).dp.toPx()
+            drawOval(
+                color = gold2.copy(alpha = glowAlpha * ring * 0.055f),
+                topLeft = Offset(-ex * 0.5f, -ex * 0.5f),
+                size = Size(w + ex, h + ex)
+            )
+        }
+
+        // Main fill — warm gold gradient from tip to base
+        drawPath(
+            path = path,
+            brush = Brush.verticalGradient(
+                colors = listOf(gold1, gold2, gold3),
+                startY = 0f,
+                endY = h
+            ),
+            alpha = coreAlpha
+        )
+
+        // Crisp dark outline for definition against any background
+        drawPath(
+            path = path,
+            color = gold3.copy(alpha = coreAlpha * 0.85f),
+            style = Stroke(width = 1.dp.toPx())
+        )
+
+        // Left-face specular highlight — catches light at the tip
+        drawLine(
+            color = Color.White.copy(alpha = coreAlpha * 0.55f),
+            start = Offset(w * 0.50f, 2.5.dp.toPx()),
+            end   = Offset(w * 0.19f, h * 0.50f),
+            strokeWidth = 1.5.dp.toPx()
+        )
+    }
 }
 
 @Composable
