@@ -1,6 +1,8 @@
 package com.dehong.duelofSuits.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,7 +18,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -79,6 +84,26 @@ fun PlayerHand(
     val cardWidth  = LocalCardWidth.current
     val cardHeight = LocalCardHeight.current
 
+    // Spread factor: 0 = all cards collapsed to center, 1 = full fan
+    val spreadFactor = remember { Animatable(0f) }
+    val prevHandSize = remember { mutableIntStateOf(hand.size) }
+
+    LaunchedEffect(hand.size) {
+        val prev = prevHandSize.intValue
+        prevHandSize.intValue = hand.size
+        when {
+            hand.size == 0 -> spreadFactor.snapTo(0f)   // reset between games
+            hand.size > prev -> {
+                // Cards received — snap to collapsed center, then fan out
+                spreadFactor.snapTo(0f)
+                spreadFactor.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(durationMillis = 460, easing = FastOutSlowInEasing)
+                )
+            }
+        }
+    }
+
     BoxWithConstraints(
         modifier = modifier.clipToBounds(),
         contentAlignment = Alignment.BottomCenter
@@ -86,10 +111,12 @@ fun PlayerHand(
         val availableWidthPx = constraints.maxWidth.toFloat()
         val cardWidthPx = with(density) { cardWidth.toPx() }
         val desiredStepPx = with(density) { 38.dp.toPx() }
-        // Cards overlap with a fixed step, clamped so they always fit the container.
         val step = if (n <= 1) 0f else minOf(desiredStepPx, (availableWidthPx - cardWidthPx) / (n - 1))
         val totalWidthPx = if (n <= 1) cardWidthPx else cardWidthPx + (n - 1) * step
         val startX = (availableWidthPx - totalWidthPx) / 2f
+        // X position when all cards are collapsed to screen center
+        val centerX = (availableWidthPx - cardWidthPx) / 2f
+        val spread = spreadFactor.value
 
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -106,7 +133,9 @@ fun PlayerHand(
             ) {
                 hand.forEachIndexed { idx, card ->
                     val selState = getSelectionState(card)
-                    val xPx = (startX + idx * step).roundToInt()
+                    val finalX = startX + idx * step
+                    // Interpolate from center to final fan position
+                    val xPx = (centerX + (finalX - centerX) * spread).roundToInt()
                     val yPx = if (selState == CardSelectionState.SELECTED) {
                         with(density) { (-8).dp.roundToPx() }
                     } else 0
@@ -127,6 +156,12 @@ fun PlayerHand(
                 }
             }
         }
+
+        // Invisible anchor: horizontally centered, vertically at the top of the card fan
+        Box(modifier = Modifier
+            .offset(y = -(cardHeight * 0.8f))
+            .onGloballyPositioned { registry.register(PositionKey.HumanHandCenter, it) }
+        )
     }
 }
 

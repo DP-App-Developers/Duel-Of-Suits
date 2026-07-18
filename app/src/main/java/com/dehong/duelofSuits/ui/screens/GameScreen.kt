@@ -576,9 +576,13 @@ private fun handleAnimationEvent(
             scope.launch {
                 delay(event.delayMs)
                 val startOffset = registry.getOffset(PositionKey.DrawPile)
-                val endOffset = registry.getOffset(PositionKey.PlayerArea(event.targetPlayerId))
-                    .takeIf { it != Offset.Zero }
-                    ?: startOffset
+                // Human cards fly to the bottom-center landing zone; AI cards to their area
+                val endKey = if (event.targetPlayerId == 0)
+                    PositionKey.HumanHandCenter
+                else
+                    PositionKey.PlayerArea(event.targetPlayerId)
+                val endOffset = registry.getOffset(endKey)
+                    .takeIf { it != Offset.Zero } ?: startOffset
 
                 animateCard(
                     id = "deal_${event.targetPlayerId}_${event.cardIndex}",
@@ -637,8 +641,11 @@ private fun handleAnimationEvent(
         is AnimationEvent.DrawCardFromPile -> {
             scope.launch {
                 val start = registry.getOffset(PositionKey.DrawPile)
-                val end = registry.getOffset(PositionKey.PlayerArea(event.playerId))
-                    .takeIf { it != Offset.Zero } ?: start
+                val endKey = if (event.playerId == 0)
+                    PositionKey.HumanHandCenter
+                else
+                    PositionKey.PlayerArea(event.playerId)
+                val end = registry.getOffset(endKey).takeIf { it != Offset.Zero } ?: start
 
                 repeat(minOf(event.count, 3)) { i ->
                     delay(i * 100L)
@@ -662,7 +669,13 @@ private fun handleAnimationEvent(
 
         is AnimationEvent.TableToPlayer -> {
             scope.launch {
-                val end = registry.getOffset(PositionKey.PlayerArea(event.targetPlayerId))
+                val endKey = if (event.targetPlayerId == 0)
+                    PositionKey.HumanHandCenter
+                else
+                    PositionKey.PlayerArea(event.targetPlayerId)
+                val end = registry.getOffset(endKey)
+                    .takeIf { it != Offset.Zero }
+                    ?: registry.getOffset(PositionKey.PlayerArea(event.targetPlayerId))
                 event.cards.forEachIndexed { i, card ->
                     val slotIdx = i / 2
                     val start = registry.getOffset(

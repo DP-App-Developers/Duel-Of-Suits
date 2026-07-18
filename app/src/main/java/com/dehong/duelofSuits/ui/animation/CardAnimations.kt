@@ -15,6 +15,7 @@ sealed class PositionKey {
     object DrawPile : PositionKey()
     object DiscardPile : PositionKey()
     object TableArea : PositionKey()
+    object HumanHandCenter : PositionKey()
     data class HandCard(val playerId: Int, val cardIndex: Int) : PositionKey()
     data class AttackSlot(val slotIndex: Int) : PositionKey()
     data class DefenseSlot(val slotIndex: Int) : PositionKey()
@@ -34,6 +35,7 @@ class PositionRegistry {
         is PositionKey.DrawPile -> "draw"
         is PositionKey.DiscardPile -> "discard"
         is PositionKey.TableArea -> "table"
+        is PositionKey.HumanHandCenter -> "hand_center"
         is PositionKey.HandCard -> "hand_${playerId}_$cardIndex"
         is PositionKey.AttackSlot -> "attack_$slotIndex"
         is PositionKey.DefenseSlot -> "defense_$slotIndex"
