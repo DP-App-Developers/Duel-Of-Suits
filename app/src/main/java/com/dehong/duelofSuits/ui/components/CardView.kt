@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +50,10 @@ import com.dehong.duelofSuits.ui.theme.SelectedBorder
 
 val CARD_WIDTH  = 54.dp
 val CARD_HEIGHT = 78.dp
+
+val LocalCardWidth  = compositionLocalOf { CARD_WIDTH }
+val LocalCardHeight = compositionLocalOf { CARD_HEIGHT }
+
 private val CARD_SHAPE = RoundedCornerShape(8.dp)
 
 @Composable
@@ -72,6 +77,8 @@ fun CardView(
     }
     val alpha = if (selectionState == CardSelectionState.DISABLED) 0.3f else 1f
 
+    val cardWidth  = LocalCardWidth.current
+    val cardHeight = LocalCardHeight.current
     Surface(
         shape = CARD_SHAPE,
         shadowElevation = when (selectionState) {
@@ -81,7 +88,7 @@ fun CardView(
         },
         color = if (faceDown) CardBackBlue else CardFace,
         modifier = modifier
-            .size(CARD_WIDTH, CARD_HEIGHT)
+            .size(cardWidth, cardHeight)
             .then(
                 if (borderWidth > 0.dp) Modifier.border(borderWidth, borderColor, CARD_SHAPE)
                 else Modifier
@@ -269,7 +276,7 @@ private fun CardFrontJoker(card: Card.Joker, alpha: Float) {
 fun CardPlaceholder(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .size(CARD_WIDTH, CARD_HEIGHT)
+            .size(LocalCardWidth.current, LocalCardHeight.current)
             .border(1.dp, Gold.copy(alpha = 0.2f), CARD_SHAPE)
             .clip(CARD_SHAPE)
             .background(Color.White.copy(alpha = 0.03f))

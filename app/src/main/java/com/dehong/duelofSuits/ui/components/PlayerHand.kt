@@ -76,13 +76,15 @@ fun PlayerHand(
     val hand = sortedHand(player.hand, state.trumpSuit)
     val n = hand.size
     val density = LocalDensity.current
+    val cardWidth  = LocalCardWidth.current
+    val cardHeight = LocalCardHeight.current
 
     BoxWithConstraints(
         modifier = modifier.clipToBounds(),
         contentAlignment = Alignment.BottomCenter
     ) {
         val availableWidthPx = constraints.maxWidth.toFloat()
-        val cardWidthPx = with(density) { CARD_WIDTH.toPx() }
+        val cardWidthPx = with(density) { cardWidth.toPx() }
         val desiredStepPx = with(density) { 38.dp.toPx() }
         // Cards overlap with a fixed step, clamped so they always fit the container.
         val step = if (n <= 1) 0f else minOf(desiredStepPx, (availableWidthPx - cardWidthPx) / (n - 1))
@@ -96,8 +98,8 @@ fun PlayerHand(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(CARD_HEIGHT)
-                    .offset { IntOffset(0, (CARD_HEIGHT * 0.2f).roundToPx()) }
+                    .height(cardHeight)
+                    .offset { IntOffset(0, (cardHeight * 0.2f).roundToPx()) }
                     .onGloballyPositioned { coords ->
                         registry.register(PositionKey.PlayerArea(player.id), coords)
                     }

@@ -45,6 +45,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
@@ -67,6 +68,8 @@ import com.dehong.duelofSuits.ui.components.PassBubble
 import com.dehong.duelofSuits.ui.components.TurnArrow
 import com.dehong.duelofSuits.ui.components.CARD_HEIGHT
 import com.dehong.duelofSuits.ui.components.CARD_WIDTH
+import com.dehong.duelofSuits.ui.components.LocalCardHeight
+import com.dehong.duelofSuits.ui.components.LocalCardWidth
 import com.dehong.duelofSuits.ui.components.CardView
 import com.dehong.duelofSuits.ui.components.DrawPile
 import com.dehong.duelofSuits.ui.components.GameInfoOverlay
@@ -105,10 +108,12 @@ fun GameScreen(
         }
     }
 
+    val cardWidth  = (LocalConfiguration.current.screenWidthDp / 12f).dp
+    val cardHeight = cardWidth * (CARD_HEIGHT.value / CARD_WIDTH.value)
     val density = LocalDensity.current
     LaunchedEffect(Unit) {
         viewModel.animationEvents.collect { event ->
-            handleAnimationEvent(event, registry, flyingCards, scope, density)
+            handleAnimationEvent(event, registry, flyingCards, scope, density, cardWidth)
             if (event is AnimationEvent.PlayerPassed) {
                 playerBubbles[event.playerIdx] = "PASS"
                 scope.launch {
@@ -128,7 +133,9 @@ fun GameScreen(
 
     CompositionLocalProvider(
         LocalPositionRegistry provides registry,
-        LocalFlyingCards provides flyingCards.map { it.card }.toSet()
+        LocalFlyingCards provides flyingCards.map { it.card }.toSet(),
+        LocalCardWidth provides cardWidth,
+        LocalCardHeight provides cardHeight
     ) {
         Box(
             modifier = Modifier
@@ -332,13 +339,14 @@ private fun ThreePlayerLayout(
     activeIdx: Int,
     passedPlayers: Map<Int, String>
 ) {
+    val cardHeight = LocalCardHeight.current
     Column(modifier = Modifier.fillMaxSize()) {
         BoxWithConstraints(
             modifier = Modifier.fillMaxWidth().weight(0.52f)
         ) {
             val density = LocalDensity.current
             val availWidth = constraints.maxWidth
-            val playerWidthPx = with(density) { (CARD_HEIGHT * 0.8f + 20.dp).toPx() }
+            val playerWidthPx = with(density) { (cardHeight * 0.8f + 20.dp).toPx() }
 
             CenterPanel(
                 state = state,
@@ -354,7 +362,7 @@ private fun ThreePlayerLayout(
                 isActive = activeIdx == state.players[1].id,
                 bubbleText = passedPlayers[state.players[1].id],
                 modifier = Modifier
-                    .width(CARD_HEIGHT * 0.8f + 20.dp)
+                    .width(cardHeight * 0.8f + 20.dp)
                     .fillMaxHeight()
                     .offset { IntOffset((availWidth * 0.25f - playerWidthPx / 2f).roundToInt(), 0) }
             )
@@ -366,7 +374,7 @@ private fun ThreePlayerLayout(
                 isActive = activeIdx == state.players[2].id,
                 bubbleText = passedPlayers[state.players[2].id],
                 modifier = Modifier
-                    .width(CARD_HEIGHT * 0.8f + 20.dp)
+                    .width(cardHeight * 0.8f + 20.dp)
                     .fillMaxHeight()
                     .offset { IntOffset((availWidth * 0.75f - playerWidthPx / 2f).roundToInt(), 0) }
             )
@@ -406,6 +414,7 @@ private fun FourPlayerLayout(
     activeIdx: Int,
     passedPlayers: Map<Int, String>
 ) {
+    val cardHeight = LocalCardHeight.current
     Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Top area: top AIs + center panel (side AI overlaid separately)
@@ -413,12 +422,12 @@ private fun FourPlayerLayout(
             modifier = Modifier.fillMaxWidth().weight(0.62f)
         ) {
             // Reserve horizontal space for the side AI overlay
-            Spacer(modifier = Modifier.width(CARD_HEIGHT * 0.8f + 20.dp))
+            Spacer(modifier = Modifier.width(cardHeight * 0.8f + 20.dp))
 
             BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 val density = LocalDensity.current
                 val availWidth = constraints.maxWidth
-                val playerWidthPx = with(density) { (CARD_HEIGHT * 0.8f + 20.dp).toPx() }
+                val playerWidthPx = with(density) { (cardHeight * 0.8f + 20.dp).toPx() }
 
                 CenterPanel(
                     state = state,
@@ -434,7 +443,7 @@ private fun FourPlayerLayout(
                     isActive = activeIdx == state.players[2].id,
                     bubbleText = passedPlayers[state.players[2].id],
                     modifier = Modifier
-                        .width(CARD_HEIGHT * 0.8f + 20.dp)
+                        .width(cardHeight * 0.8f + 20.dp)
                         .fillMaxHeight()
                         .offset { IntOffset((availWidth * 0.25f - playerWidthPx / 2f).roundToInt(), 0) }
                 )
@@ -446,7 +455,7 @@ private fun FourPlayerLayout(
                     isActive = activeIdx == state.players[3].id,
                     bubbleText = passedPlayers[state.players[3].id],
                     modifier = Modifier
-                        .width(CARD_HEIGHT * 0.8f + 20.dp)
+                        .width(cardHeight * 0.8f + 20.dp)
                         .fillMaxHeight()
                         .offset { IntOffset((availWidth * 0.75f - playerWidthPx / 2f).roundToInt(), 0) }
                 )
@@ -496,7 +505,7 @@ private fun DrawPileOverlay(
     modifier: Modifier = Modifier
 ) {
     // Clear the full AiPlayerArea (card fan + name/count labels below it)
-    val topOffset = CARD_HEIGHT + 36.dp
+    val topOffset = LocalCardHeight.current + 36.dp
     Column(
         modifier = modifier.padding(top = topOffset, end = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -525,19 +534,20 @@ private fun FlyingCardLayer(flyingCards: List<FlyingCard>) {
                         offset.y.roundToInt()
                     )
                 }
-                .size(CARD_WIDTH, CARD_HEIGHT)
         )
     }
 }
 
-// Each slot in GameTable's LazyRow occupies (CARD_WIDTH + 20.dp) plus 12.dp spacing.
-// Used to extrapolate the position of a slot not yet rendered.
+// Each slot in GameTable's LazyRow occupies (cardWidth + defenseX) plus 12.dp spacing.
+// defenseX scales with cardWidth at ratio 20/54 of the original design.
 private fun estimateAttackSlotOffset(
     slotIndex: Int,
     registry: PositionRegistry,
-    density: androidx.compose.ui.unit.Density
+    density: androidx.compose.ui.unit.Density,
+    cardWidth: androidx.compose.ui.unit.Dp
 ): Offset {
-    val slotStepPx = with(density) { (CARD_WIDTH + 20.dp + 12.dp).toPx() }
+    val defenseX = cardWidth * (20f / 54f)
+    val slotStepPx = with(density) { (cardWidth + defenseX + 12.dp).toPx() }
     // Walk backwards to find the nearest registered slot and extrapolate
     for (i in slotIndex - 1 downTo 0) {
         val known = registry.getOffset(PositionKey.AttackSlot(i))
@@ -557,7 +567,8 @@ private fun handleAnimationEvent(
     registry: PositionRegistry,
     flyingCards: MutableList<FlyingCard>,
     scope: kotlinx.coroutines.CoroutineScope,
-    density: androidx.compose.ui.unit.Density
+    density: androidx.compose.ui.unit.Density,
+    cardWidth: androidx.compose.ui.unit.Dp
 ) {
     when (event) {
         is AnimationEvent.DealCard -> {
@@ -587,7 +598,7 @@ private fun handleAnimationEvent(
                     ?: registry.getOffset(PositionKey.PlayerArea(event.fromPlayerId))
                 val endOffset = registry.getOffset(PositionKey.AttackSlot(event.toSlotIndex))
                     .takeIf { it != Offset.Zero }
-                    ?: estimateAttackSlotOffset(event.toSlotIndex, registry, density)
+                    ?: estimateAttackSlotOffset(event.toSlotIndex, registry, density, cardWidth)
 
                 animateCard(
                     id = "play_${event.card.hashCode()}",

@@ -38,8 +38,8 @@ import com.dehong.duelofSuits.ui.animation.PositionRegistry
 import com.dehong.duelofSuits.ui.theme.HighlightCyan
 import com.dehong.duelofSuits.ui.theme.SelectedBorder
 
-private val DEFENSE_X = 20.dp
-private val DEFENSE_Y = 16.dp
+private val DEFENSE_X_RATIO = 20f / 54f
+private val DEFENSE_Y_RATIO = 16f / 78f
 
 @Composable
 fun GameTable(
@@ -48,12 +48,16 @@ fun GameTable(
     onDefenseSlotTapped: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val cardWidth  = LocalCardWidth.current
+    val cardHeight = LocalCardHeight.current
+    val defenseX   = cardWidth  * DEFENSE_X_RATIO
+    val defenseY   = cardHeight * DEFENSE_Y_RATIO
     val slots = state.tableSlots
     if (slots.isEmpty()) {
         Box(
             modifier = modifier
                 .fillMaxWidth()
-                .height(CARD_HEIGHT + 20.dp)
+                .height(cardHeight + defenseY)
                 .onGloballyPositioned { coords ->
                     registry.register(PositionKey.TableArea, coords)
                 },
@@ -79,6 +83,8 @@ fun GameTable(
                 slotIndex = index,
                 state = state,
                 registry = registry,
+                defenseX = defenseX,
+                defenseY = defenseY,
                 onDefenseSlotTapped = onDefenseSlotTapped
             )
         }
@@ -91,8 +97,12 @@ private fun TableSlotView(
     slotIndex: Int,
     state: GameState,
     registry: PositionRegistry,
+    defenseX: androidx.compose.ui.unit.Dp,
+    defenseY: androidx.compose.ui.unit.Dp,
     onDefenseSlotTapped: (Int) -> Unit
 ) {
+    val cardWidth  = LocalCardWidth.current
+    val cardHeight = LocalCardHeight.current
     val isHumanDefender = state.isHumanDefender && state.phase == GamePhase.DEFENSE_PHASE
     val selectedHandCard = state.selectedHandCardForDefense
     val canDefendThisSlot = isHumanDefender && slot.defenseCard == null &&
@@ -101,7 +111,7 @@ private fun TableSlotView(
     val flyingCards = LocalFlyingCards.current
 
     Box(
-        modifier = Modifier.size(CARD_WIDTH + DEFENSE_X, CARD_HEIGHT + DEFENSE_Y)
+        modifier = Modifier.size(cardWidth + defenseX, cardHeight + defenseY)
     ) {
         CardView(
             card = slot.attackCard,
@@ -119,7 +129,7 @@ private fun TableSlotView(
                 selectionState = CardSelectionState.COMMITTED,
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .offset(x = DEFENSE_X, y = DEFENSE_Y)
+                    .offset(x = defenseX, y = defenseY)
                     .alpha(if (slot.defenseCard in flyingCards) 0f else 1f)
                     .onGloballyPositioned { coords ->
                         registry.register(PositionKey.DefenseSlot(slotIndex), coords)
@@ -134,8 +144,8 @@ private fun TableSlotView(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .offset(x = DEFENSE_X, y = DEFENSE_Y)
-                    .size(CARD_WIDTH, CARD_HEIGHT)
+                    .offset(x = defenseX, y = defenseY)
+                    .size(cardWidth, cardHeight)
                     .border(
                         width = if (canDefendThisSlot) 2.dp else 1.dp,
                         color = slotBorderColor,

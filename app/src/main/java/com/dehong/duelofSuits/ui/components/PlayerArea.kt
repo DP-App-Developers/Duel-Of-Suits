@@ -145,6 +145,8 @@ fun AiPlayerArea(
         label = "aiRoleColor"
     )
 
+    val cardWidth  = LocalCardWidth.current
+    val cardHeight = LocalCardHeight.current
     Column(
         modifier = modifier
             .fillMaxHeight()
@@ -157,13 +159,13 @@ fun AiPlayerArea(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(CARD_HEIGHT * 0.8f),
+                .height(cardHeight * 0.8f),
             contentAlignment = Alignment.TopCenter
         ) {
             Box(
                 modifier = Modifier
-                    .size(CARD_WIDTH, CARD_HEIGHT)
-                    .offset { IntOffset(0, -(CARD_HEIGHT * 0.2f).roundToPx()) }
+                    .size(cardWidth, cardHeight)
+                    .offset { IntOffset(0, -(cardHeight * 0.2f).roundToPx()) }
                     .onGloballyPositioned { coords ->
                         registry.register(PositionKey.PlayerArea(player.id), coords)
                     }
@@ -177,13 +179,12 @@ fun AiPlayerArea(
                         faceDown = true,
                         modifier = Modifier
                             .offset(x = (cardOffset * 14).dp)
-                            .offset { IntOffset(0, -(CARD_HEIGHT * 0.2f).roundToPx()) }
+                            .offset { IntOffset(0, -(cardHeight * 0.2f).roundToPx()) }
                             .zIndex(idx.toFloat())
                             .graphicsLayer {
                                 rotationZ = -(cardOffset * 4f)
                                 transformOrigin = TransformOrigin(0.5f, 0.5f)
                             }
-                            .size(CARD_WIDTH, CARD_HEIGHT)
                     )
                 }
             }
@@ -224,10 +225,12 @@ fun AiSideArea(
         label = "aiSideRoleColor"
     )
 
+    val cardWidth  = LocalCardWidth.current
+    val cardHeight = LocalCardHeight.current
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .width(CARD_HEIGHT * 0.8f + 20.dp)
+            .width(cardHeight * 0.8f + 20.dp)
             .padding(end = 4.dp)
     ) {
         val faceDownCards = minOf(player.hand.size, 8)
@@ -238,7 +241,7 @@ fun AiSideArea(
         ) {
             Box(
                 modifier = Modifier
-                    .size(CARD_WIDTH, CARD_HEIGHT)
+                    .size(cardWidth, cardHeight)
                     .onGloballyPositioned { coords ->
                         registry.register(PositionKey.PlayerArea(player.id), coords)
                     }
@@ -252,13 +255,12 @@ fun AiSideArea(
                         faceDown = true,
                         modifier = Modifier
                             .offset(y = (cardOffset * 14).dp)
-                            .offset { IntOffset(-(CARD_HEIGHT * 0.2f).roundToPx(), 0) }
+                            .offset { IntOffset(-(cardHeight * 0.2f).roundToPx(), 0) }
                             .zIndex(idx.toFloat())
                             .graphicsLayer {
                                 rotationZ = 90f + cardOffset * 4f
                                 transformOrigin = TransformOrigin(0.5f, 0.5f)
                             }
-                            .size(CARD_WIDTH, CARD_HEIGHT)
                     )
                 }
             }

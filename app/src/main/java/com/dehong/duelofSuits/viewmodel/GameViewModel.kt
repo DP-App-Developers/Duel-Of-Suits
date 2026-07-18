@@ -204,7 +204,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
         val slot = state.tableSlots.getOrNull(slotIndex) ?: return
         if (slot.defenseCard != null) return
         if (!GameEngine.canDefend(slot.attackCard, selectedCard, state.trumpSuit)) {
-            _errorMessage.value = "This card cannot beat that attack"
+            _errorMessage.value = "This card cannot defend that attack"
             return
         }
         val newState = GameEngine.processDefenseCard(slot.attackCard, selectedCard, 0, state)
