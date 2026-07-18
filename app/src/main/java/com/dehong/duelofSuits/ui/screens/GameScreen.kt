@@ -112,7 +112,7 @@ fun GameScreen(
     // Clear any deal cards that were kept at the landing spot so the fan-out takes over.
     LaunchedEffect(state.phase) {
         if (state.phase != GamePhase.DEALING) {
-            flyingCards.removeAll { it.id.startsWith("deal_0_") }
+            flyingCards.removeAll { it.id.startsWith("deal_") }
         }
     }
 
@@ -600,8 +600,8 @@ private fun handleAnimationEvent(
                     to = endOffset,
                     durationMs = 500,
                     flyingCards = flyingCards,
-                    // Player 0 cards stay visible at the landing spot until the real hand populates
-                    removeAfter = event.targetPlayerId != 0
+                    // All deal cards stay visible at the landing spot until the real hands populate
+                    removeAfter = false
                 )
             }
         }
