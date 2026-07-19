@@ -186,14 +186,6 @@ fun GameScreen(
                         modifier = Modifier.align(Alignment.CenterEnd)
                     )
 
-                    // Action buttons float at bottom-right, independent of hand layout
-                    GameInfoOverlay(
-                        state = state,
-                        onPlaySelected = viewModel::onPlaySelectedPressed,
-                        onPass = viewModel::onPassPressed,
-                        onTakeCards = viewModel::onTakeCardsPressed,
-                        modifier = Modifier.align(Alignment.BottomEnd)
-                    )
                 }
             }
 
@@ -329,7 +321,13 @@ private fun TwoPlayerLayout(
                     getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
                     modifier = Modifier.weight(0.70f).fillMaxHeight()
                 )
-                Spacer(modifier = Modifier.weight(0.15f))
+                GameInfoOverlay(
+                    state = state,
+                    onPlaySelected = viewModel::onPlaySelectedPressed,
+                    onPass = viewModel::onPassPressed,
+                    onTakeCards = viewModel::onTakeCardsPressed,
+                    modifier = Modifier.weight(0.15f).fillMaxHeight()
+                )
             }
             when {
                 0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
@@ -404,7 +402,13 @@ private fun ThreePlayerLayout(
                     getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
                     modifier = Modifier.weight(0.70f).fillMaxHeight()
                 )
-                Spacer(modifier = Modifier.weight(0.15f))
+                GameInfoOverlay(
+                    state = state,
+                    onPlaySelected = viewModel::onPlaySelectedPressed,
+                    onPass = viewModel::onPassPressed,
+                    onTakeCards = viewModel::onTakeCardsPressed,
+                    modifier = Modifier.weight(0.15f).fillMaxHeight()
+                )
             }
             when {
                 0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
@@ -487,7 +491,13 @@ private fun FourPlayerLayout(
                     getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
                     modifier = Modifier.weight(0.70f).fillMaxHeight()
                 )
-                Spacer(modifier = Modifier.weight(0.15f))
+                GameInfoOverlay(
+                    state = state,
+                    onPlaySelected = viewModel::onPlaySelectedPressed,
+                    onPass = viewModel::onPassPressed,
+                    onTakeCards = viewModel::onTakeCardsPressed,
+                    modifier = Modifier.weight(0.15f).fillMaxHeight()
+                )
             }
             when {
                 0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))

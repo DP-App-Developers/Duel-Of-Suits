@@ -15,9 +15,8 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,7 +40,6 @@ import com.dehong.duelofSuits.ui.theme.DangerRed
 import com.dehong.duelofSuits.ui.theme.TextOnDark
 
 private val BTN_SHAPE = RoundedCornerShape(14.dp)
-private val BTN_MIN_WIDTH = 130.dp
 
 @Composable
 fun GameInfoOverlay(
@@ -52,15 +50,14 @@ fun GameInfoOverlay(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.padding(horizontal = 12.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalAlignment = Alignment.End
+        modifier = modifier.padding(horizontal = 6.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         when {
             state.phase == GamePhase.ATTACK_PHASE && state.isHumanAttacker -> {
                 ActionButton(
                     label = "ATTACK",
-                    icon = "▲",
                     enabled = state.selectedCards.isNotEmpty() && !state.animating,
                     topColor = Color(0xFFFFB300),
                     bottomColor = Color(0xFFE65100),
@@ -73,7 +70,6 @@ fun GameInfoOverlay(
                 if (state.selectedCards.isNotEmpty()) {
                     ActionButton(
                         label = "THROW IN",
-                        icon = "+",
                         enabled = !state.animating,
                         topColor = Color(0xFF42A5F5),
                         bottomColor = Color(0xFF1565C0),
@@ -91,7 +87,6 @@ fun GameInfoOverlay(
             state.phase == GamePhase.DEFENSE_PHASE && state.isHumanDefender -> {
                 ActionButton(
                     label = "TAKE CARDS",
-                    icon = "✕",
                     enabled = !state.animating,
                     topColor = Color(0xFFEF5350),
                     bottomColor = Color(0xFF880E4F),
@@ -106,7 +101,6 @@ fun GameInfoOverlay(
 @Composable
 private fun ActionButton(
     label: String,
-    icon: String,
     enabled: Boolean,
     topColor: Color,
     bottomColor: Color,
@@ -155,7 +149,7 @@ private fun ActionButton(
                 ambientColor = effectiveGlow,
                 spotColor = effectiveGlow
             )
-            .widthIn(min = BTN_MIN_WIDTH)
+            .fillMaxWidth()
             .clip(BTN_SHAPE)
             .background(gradient)
             .drawWithContent {
@@ -184,24 +178,13 @@ private fun ActionButton(
             .padding(horizontal = 20.dp, vertical = 15.dp),
         contentAlignment = Alignment.Center
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = icon,
-                color = Color.White.copy(alpha = if (enabled) 1f else 0.35f),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-            Text(
-                text = label,
-                color = Color.White.copy(alpha = if (enabled) 1f else 0.35f),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 1.8.sp
-            )
-        }
+        Text(
+            text = label,
+            color = Color.White.copy(alpha = if (enabled) 1f else 0.35f),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 1.8.sp
+        )
     }
 }
 
@@ -222,7 +205,7 @@ private fun GhostButton(
     Box(
         modifier = Modifier
             .graphicsLayer { scaleX = scale; scaleY = scale }
-            .widthIn(min = BTN_MIN_WIDTH)
+            .fillMaxWidth()
             .border(
                 width = 1.dp,
                 color = TextOnDark.copy(alpha = if (enabled) 0.28f else 0.10f),
