@@ -75,6 +75,12 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             val defenderIdx = (attackerIdx + 1) % playerCount
 
             val totalCards = playerCount * 8
+            // Show the draw pile and trump card before dealing so it doesn't look empty
+            _gameState.value = _gameState.value.copy(
+                drawPile = deck,
+                trumpCard = trumpCard,
+                trumpSuit = trumpSuit
+            )
             delay(400L) // wait for UI layout pass so player area positions are registered
             for (i in 0 until totalCards) {
                 val playerIdx = i % playerCount
