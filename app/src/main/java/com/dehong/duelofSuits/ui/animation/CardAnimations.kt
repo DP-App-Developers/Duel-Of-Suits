@@ -11,6 +11,9 @@ import com.dehong.duelofSuits.model.Card
 
 val LocalFlyingCards = compositionLocalOf<Set<Card>> { emptySet() }
 
+/** True while the table card-slot row is scaling to accommodate a new card. */
+val LocalTableResizing = compositionLocalOf { false }
+
 sealed class PositionKey {
     object DrawPile : PositionKey()
     object DiscardPile : PositionKey()

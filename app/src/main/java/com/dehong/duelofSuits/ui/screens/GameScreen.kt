@@ -9,7 +9,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,7 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -33,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -61,6 +60,7 @@ import com.dehong.duelofSuits.model.Suit
 import com.dehong.duelofSuits.ui.animation.AnimationEvent
 import com.dehong.duelofSuits.ui.animation.FlyingCard
 import com.dehong.duelofSuits.ui.animation.LocalFlyingCards
+import com.dehong.duelofSuits.ui.animation.LocalTableResizing
 import com.dehong.duelofSuits.ui.animation.PositionKey
 import com.dehong.duelofSuits.ui.animation.PositionRegistry
 import com.dehong.duelofSuits.ui.components.AiPlayerArea
@@ -87,6 +87,9 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 val LocalPositionRegistry = staticCompositionLocalOf { PositionRegistry() }
+
+// Max attack slots displayed in row 1; any beyond this go to row 2 in GameTable.
+private const val ROW_THRESHOLD = 4
 
 @Composable
 fun GameScreen(
@@ -120,6 +123,21 @@ fun GameScreen(
     val cardWidth  = (LocalConfiguration.current.screenWidthDp / 12f).dp
     val cardHeight = cardWidth * (CARD_HEIGHT.value / CARD_WIDTH.value)
     val density = LocalDensity.current
+
+    // True while the table scale animation is running after a new attack slot is added.
+    var tableResizing by remember { mutableStateOf(false) }
+    // Drive tableResizing from actual state changes so it aligns with the real resize animation.
+    LaunchedEffect(state.tableSlots.size) {
+        if (state.tableSlots.size > 0) {
+            tableResizing = true
+            try {
+                delay(320L)
+            } finally {
+                tableResizing = false
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.animationEvents.collect { event ->
             handleAnimationEvent(event, registry, flyingCards, scope, density, cardWidth, playerCount)
@@ -144,7 +162,8 @@ fun GameScreen(
         LocalPositionRegistry provides registry,
         LocalFlyingCards provides flyingCards.map { it.card }.toSet(),
         LocalCardWidth provides cardWidth,
-        LocalCardHeight provides cardHeight
+        LocalCardHeight provides cardHeight,
+        LocalTableResizing provides tableResizing
     ) {
         Box(
             modifier = Modifier
@@ -177,13 +196,6 @@ fun GameScreen(
                         registry = registry,
                         viewModel = viewModel,
                         passedPlayers = playerBubbles
-                    )
-
-                    // Draw pile anchored to the right edge
-                    DrawPileOverlay(
-                        state = state,
-                        registry = registry,
-                        modifier = Modifier.align(Alignment.CenterEnd)
                     )
 
                 }
@@ -244,6 +256,8 @@ private fun CenterPanel(
         }
     }
 
+    // Draw pile lives here so it's always vertically co-located with the board,
+    // never floating over player hands or AI areas.
     Box(
         modifier = modifier.padding(vertical = 6.dp),
         contentAlignment = Alignment.Center
@@ -255,6 +269,19 @@ private fun CenterPanel(
             onDefenseSlotTapped = if (state.tableClearing) { _ -> } else viewModel::onDefenseSlotTapped,
             modifier = tableModifier
         )
+        Column(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            DrawPile(
+                count = state.drawPileCount,
+                registry = registry,
+                trumpCard = state.trumpCard
+            )
+        }
     }
 }
 
@@ -284,9 +311,9 @@ private fun TwoPlayerLayout(
 ) {
     val cardHeight = LocalCardHeight.current
     Column(modifier = Modifier.fillMaxSize()) {
-        // AI hand centered at the top
+        // AI hand: its own dedicated zone, never overlaps the board below
         Row(
-            modifier = Modifier.fillMaxWidth().weight(0.25f),
+            modifier = Modifier.fillMaxWidth().weight(0.22f),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.Top
         ) {
@@ -304,10 +331,10 @@ private fun TwoPlayerLayout(
             state = state,
             registry = registry,
             viewModel = viewModel,
-            modifier = Modifier.fillMaxWidth().weight(0.30f)
+            modifier = Modifier.fillMaxWidth().weight(0.40f)
         )
 
-        Box(modifier = Modifier.fillMaxWidth().weight(0.45f)) {
+        Box(modifier = Modifier.fillMaxWidth().weight(0.38f)) {
             Row(
                 modifier = Modifier.fillMaxSize(),
                 verticalAlignment = Alignment.Bottom
@@ -349,44 +376,36 @@ private fun ThreePlayerLayout(
 ) {
     val cardHeight = LocalCardHeight.current
     Column(modifier = Modifier.fillMaxSize()) {
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxWidth().weight(0.52f)
+        // AI players: own dedicated row at the top, no overlap with the board
+        Row(
+            modifier = Modifier.fillMaxWidth().weight(0.22f),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.Top
         ) {
-            val density = LocalDensity.current
-            val availWidth = constraints.maxWidth
-            val playerWidthPx = with(density) { (cardHeight * 0.8f + 20.dp).toPx() }
-
-            CenterPanel(
-                state = state,
-                registry = registry,
-                viewModel = viewModel,
-                modifier = Modifier.fillMaxSize()
-            )
-
             AiPlayerArea(
                 player = state.players[1],
                 state = state,
                 registry = registry,
                 isActive = activeIdx == state.players[1].id,
                 bubbleText = passedPlayers[state.players[1].id],
-                modifier = Modifier
-                    .width(cardHeight * 0.8f + 20.dp)
-                    .fillMaxHeight()
-                    .offset { IntOffset((availWidth * 0.25f - playerWidthPx / 2f).roundToInt(), 0) }
+                modifier = Modifier.weight(0.5f).fillMaxHeight()
             )
-
             AiPlayerArea(
                 player = state.players[2],
                 state = state,
                 registry = registry,
                 isActive = activeIdx == state.players[2].id,
                 bubbleText = passedPlayers[state.players[2].id],
-                modifier = Modifier
-                    .width(cardHeight * 0.8f + 20.dp)
-                    .fillMaxHeight()
-                    .offset { IntOffset((availWidth * 0.75f - playerWidthPx / 2f).roundToInt(), 0) }
+                modifier = Modifier.weight(0.5f).fillMaxHeight()
             )
         }
+
+        CenterPanel(
+            state = state,
+            registry = registry,
+            viewModel = viewModel,
+            modifier = Modifier.fillMaxWidth().weight(0.40f)
+        )
 
         Box(modifier = Modifier.fillMaxWidth().weight(0.38f)) {
             Row(
@@ -429,54 +448,51 @@ private fun FourPlayerLayout(
     passedPlayers: Map<Int, String>
 ) {
     val cardHeight = LocalCardHeight.current
-    Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // Top area: top AIs + center panel (side AI overlaid separately)
-        Row(
-            modifier = Modifier.fillMaxWidth().weight(0.62f)
-        ) {
-            // Reserve horizontal space for the side AI overlay
-            Spacer(modifier = Modifier.width(cardHeight * 0.8f + 20.dp))
+        // Top area: side AI + (top two AIs above the board)
+        Row(modifier = Modifier.fillMaxWidth().weight(0.62f)) {
+            // Player 1: vertical hand on the left side
+            AiSideArea(
+                player = state.players[1],
+                state = state,
+                registry = registry,
+                isActive = activeIdx == state.players[1].id,
+                bubbleText = passedPlayers[state.players[1].id]
+            )
 
-            BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                val density = LocalDensity.current
-                val availWidth = constraints.maxWidth
-                val playerWidthPx = with(density) { (cardHeight * 0.8f + 20.dp).toPx() }
-
+            // Remaining width: players 2,3 at top, board below — all in their own zones
+            Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().weight(0.35f),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    AiPlayerArea(
+                        player = state.players[2],
+                        state = state,
+                        registry = registry,
+                        isActive = activeIdx == state.players[2].id,
+                        bubbleText = passedPlayers[state.players[2].id],
+                        modifier = Modifier.weight(0.5f).fillMaxHeight()
+                    )
+                    AiPlayerArea(
+                        player = state.players[3],
+                        state = state,
+                        registry = registry,
+                        isActive = activeIdx == state.players[3].id,
+                        bubbleText = passedPlayers[state.players[3].id],
+                        modifier = Modifier.weight(0.5f).fillMaxHeight()
+                    )
+                }
                 CenterPanel(
                     state = state,
                     registry = registry,
                     viewModel = viewModel,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                AiPlayerArea(
-                    player = state.players[2],
-                    state = state,
-                    registry = registry,
-                    isActive = activeIdx == state.players[2].id,
-                    bubbleText = passedPlayers[state.players[2].id],
-                    modifier = Modifier
-                        .width(cardHeight * 0.8f + 20.dp)
-                        .fillMaxHeight()
-                        .offset { IntOffset((availWidth * 0.25f - playerWidthPx / 2f).roundToInt(), 0) }
-                )
-
-                AiPlayerArea(
-                    player = state.players[3],
-                    state = state,
-                    registry = registry,
-                    isActive = activeIdx == state.players[3].id,
-                    bubbleText = passedPlayers[state.players[3].id],
-                    modifier = Modifier
-                        .width(cardHeight * 0.8f + 20.dp)
-                        .fillMaxHeight()
-                        .offset { IntOffset((availWidth * 0.75f - playerWidthPx / 2f).roundToInt(), 0) }
+                    modifier = Modifier.fillMaxWidth().weight(0.65f)
                 )
             }
         }
 
-        // Hand row spans full screen width so centering is screen-relative
         Box(modifier = Modifier.fillMaxWidth().weight(0.38f)) {
             Row(
                 modifier = Modifier.fillMaxSize(),
@@ -505,37 +521,9 @@ private fun FourPlayerLayout(
             }
         }
     }
-    // AiSideArea overlaid at full screen height so its cards center vertically on screen
-    AiSideArea(
-        player = state.players[1],
-        state = state,
-        registry = registry,
-        isActive = activeIdx == state.players[1].id,
-        bubbleText = passedPlayers[state.players[1].id]
-    )
-    } // end outer Box
 }
 
 // ── Shared composables ───────────────────────────────────────────────────────
-
-@Composable
-private fun DrawPileOverlay(
-    state: GameState,
-    registry: PositionRegistry,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.padding(end = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        DrawPile(
-            count = state.drawPileCount,
-            registry = registry,
-            trumpCard = state.trumpCard
-        )
-    }
-}
 
 @Composable
 private fun FlyingCardLayer(flyingCards: List<FlyingCard>) {
@@ -557,27 +545,29 @@ private fun FlyingCardLayer(flyingCards: List<FlyingCard>) {
     }
 }
 
-// Each slot in GameTable's LazyRow occupies (cardWidth + defenseX) plus 12.dp spacing.
-// defenseX scales with cardWidth at ratio 20/54 of the original design.
+// GameTable always renders ROW_THRESHOLD placeholder Boxes (even for empty slots) which
+// register their positions immediately on first composition. So slot 0 is always registered
+// before any card animation fires — no need for complex extrapolation fallbacks.
 private fun estimateAttackSlotOffset(
     slotIndex: Int,
     registry: PositionRegistry,
     density: androidx.compose.ui.unit.Density,
     cardWidth: androidx.compose.ui.unit.Dp
 ): Offset {
-    val defenseX = cardWidth * (20f / 54f)
+    val defenseX   = cardWidth * (20f / 54f)
     val slotStepPx = with(density) { (cardWidth + defenseX + 12.dp).toPx() }
-    // Walk backwards to find the nearest registered slot and extrapolate
-    for (i in slotIndex - 1 downTo 0) {
-        val known = registry.getOffset(PositionKey.AttackSlot(i))
-        if (known != Offset.Zero) return known + Offset((slotIndex - i) * slotStepPx, 0f)
+
+    val slot0 = registry.getOffset(PositionKey.AttackSlot(0))
+    if (slot0 != Offset.Zero) {
+        val col         = slotIndex % ROW_THRESHOLD
+        val row         = slotIndex / ROW_THRESHOLD
+        val cardHeight  = cardWidth * (78f / 54f)
+        val defenseY    = cardWidth * (16f / 54f)
+        val rowOffsetPx = with(density) { (cardHeight + defenseY + 8.dp).toPx() }
+        return Offset(slot0.x + col * slotStepPx, slot0.y + row * rowOffsetPx)
     }
-    // No existing slots: estimate from the table container's top-left + left padding
-    val tableArea = registry.getOffset(PositionKey.TableArea)
-    if (tableArea != Offset.Zero) {
-        val leftPaddingPx = with(density) { 8.dp.toPx() }
-        return tableArea + Offset(leftPaddingPx + slotIndex * slotStepPx, 0f)
-    }
+
+    // Rare fallback: layout hasn't completed its first pass yet
     return registry.getOffset(PositionKey.DrawPile)
 }
 

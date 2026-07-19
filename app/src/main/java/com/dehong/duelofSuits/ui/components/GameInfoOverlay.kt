@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dehong.duelofSuits.model.GamePhase
 import com.dehong.duelofSuits.model.GameState
+import com.dehong.duelofSuits.ui.animation.LocalTableResizing
 import com.dehong.duelofSuits.ui.theme.DangerRed
 import com.dehong.duelofSuits.ui.theme.TextOnDark
 
@@ -49,6 +50,9 @@ fun GameInfoOverlay(
     onTakeCards: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val tableResizing = LocalTableResizing.current
+    val notBusy = !state.animating && !tableResizing
+
     Column(
         modifier = modifier.padding(horizontal = 6.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
@@ -58,7 +62,7 @@ fun GameInfoOverlay(
             state.phase == GamePhase.ATTACK_PHASE && state.isHumanAttacker -> {
                 ActionButton(
                     label = "ATTACK",
-                    enabled = state.selectedCards.isNotEmpty() && !state.animating,
+                    enabled = state.selectedCards.isNotEmpty() && notBusy,
                     topColor = Color(0xFFFFB300),
                     bottomColor = Color(0xFFE65100),
                     glowColor = Color(0xFFFF8F00),
@@ -70,7 +74,7 @@ fun GameInfoOverlay(
                 if (state.selectedCards.isNotEmpty()) {
                     ActionButton(
                         label = "THROW IN",
-                        enabled = !state.animating,
+                        enabled = notBusy,
                         topColor = Color(0xFF42A5F5),
                         bottomColor = Color(0xFF1565C0),
                         glowColor = Color(0xFF1976D2),
@@ -79,7 +83,7 @@ fun GameInfoOverlay(
                 }
                 GhostButton(
                     label = "PASS",
-                    enabled = !state.animating,
+                    enabled = notBusy,
                     onClick = onPass
                 )
             }
@@ -87,7 +91,7 @@ fun GameInfoOverlay(
             state.phase == GamePhase.DEFENSE_PHASE && state.isHumanDefender -> {
                 ActionButton(
                     label = "TAKE CARDS",
-                    enabled = !state.animating,
+                    enabled = notBusy,
                     topColor = Color(0xFFEF5350),
                     bottomColor = Color(0xFF880E4F),
                     glowColor = DangerRed,

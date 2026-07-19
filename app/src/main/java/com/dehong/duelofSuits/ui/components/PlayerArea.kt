@@ -257,13 +257,12 @@ fun AiPlayerArea(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(cardHeight * 0.8f),
+                .height(cardHeight),
             contentAlignment = Alignment.TopCenter
         ) {
             Box(
                 modifier = Modifier
                     .size(cardWidth, cardHeight)
-                    .offset { IntOffset(0, -(cardHeight * 0.2f).roundToPx()) }
                     .onGloballyPositioned { coords ->
                         registry.register(PositionKey.PlayerArea(player.id), coords)
                     }
@@ -277,7 +276,6 @@ fun AiPlayerArea(
                         faceDown = true,
                         modifier = Modifier
                             .offset(x = (cardOffset * 14 * spread).dp)
-                            .offset { IntOffset(0, -(cardHeight * 0.2f).roundToPx()) }
                             .zIndex(idx.toFloat())
                             .graphicsLayer {
                                 rotationZ = -(cardOffset * 4f * spread)
@@ -368,7 +366,6 @@ fun AiSideArea(
                         faceDown = true,
                         modifier = Modifier
                             .offset(y = (cardOffset * 14 * spread).dp)
-                            .offset { IntOffset(-(cardHeight * 0.2f).roundToPx(), 0) }
                             .zIndex(idx.toFloat())
                             .graphicsLayer {
                                 rotationZ = 90f + cardOffset * 4f * spread
