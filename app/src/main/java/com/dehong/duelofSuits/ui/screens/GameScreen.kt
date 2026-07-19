@@ -183,7 +183,7 @@ fun GameScreen(
                     DrawPileOverlay(
                         state = state,
                         registry = registry,
-                        modifier = Modifier.align(Alignment.TopEnd)
+                        modifier = Modifier.align(Alignment.CenterEnd)
                     )
 
                     // Action buttons float at bottom-right, independent of hand layout
@@ -514,10 +514,8 @@ private fun DrawPileOverlay(
     registry: PositionRegistry,
     modifier: Modifier = Modifier
 ) {
-    // Clear the full AiPlayerArea (card fan + name/count labels below it)
-    val topOffset = LocalCardHeight.current + 36.dp
     Column(
-        modifier = modifier.padding(top = topOffset, end = 8.dp),
+        modifier = modifier.padding(end = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
