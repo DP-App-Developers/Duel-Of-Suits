@@ -332,8 +332,8 @@ private fun TwoPlayerLayout(
                 Spacer(modifier = Modifier.weight(0.15f))
             }
             when {
-                0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f))
-                activeIdx == state.players[0].id -> TurnArrow("▼", modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f))
+                0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                activeIdx == state.players[0].id -> TurnArrow("▼", modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
             }
         }
     }
@@ -407,8 +407,8 @@ private fun ThreePlayerLayout(
                 Spacer(modifier = Modifier.weight(0.15f))
             }
             when {
-                0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f))
-                activeIdx == state.players[0].id -> TurnArrow("▼", modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f))
+                0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                activeIdx == state.players[0].id -> TurnArrow("▼", modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
             }
         }
     }
@@ -490,8 +490,8 @@ private fun FourPlayerLayout(
                 Spacer(modifier = Modifier.weight(0.15f))
             }
             when {
-                0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f))
-                activeIdx == state.players[0].id -> TurnArrow("▼", modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f))
+                0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                activeIdx == state.players[0].id -> TurnArrow("▼", modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
             }
         }
     }
