@@ -1,6 +1,7 @@
 package com.dehong.duelofSuits.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -26,7 +27,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -224,6 +228,21 @@ fun AiPlayerArea(
         label = "aiRoleColor"
     )
 
+    val spreadFactor = remember { Animatable(if (player.hand.size > 0) 1f else 0f) }
+    val prevHandSize = remember { mutableIntStateOf(player.hand.size) }
+    LaunchedEffect(player.hand.size) {
+        val prev = prevHandSize.intValue
+        prevHandSize.intValue = player.hand.size
+        when {
+            player.hand.size == 0 -> spreadFactor.snapTo(0f)
+            player.hand.size > prev -> {
+                spreadFactor.snapTo(0f)
+                spreadFactor.animateTo(1f, tween(460, easing = FastOutSlowInEasing))
+            }
+        }
+    }
+    val spread = spreadFactor.value
+
     val cardWidth  = LocalCardWidth.current
     val cardHeight = LocalCardHeight.current
     Column(
@@ -257,11 +276,11 @@ fun AiPlayerArea(
                         card = Card.SuitedCard(Suit.SPADES, Rank.ACE),
                         faceDown = true,
                         modifier = Modifier
-                            .offset(x = (cardOffset * 14).dp)
+                            .offset(x = (cardOffset * 14 * spread).dp)
                             .offset { IntOffset(0, -(cardHeight * 0.2f).roundToPx()) }
                             .zIndex(idx.toFloat())
                             .graphicsLayer {
-                                rotationZ = -(cardOffset * 4f)
+                                rotationZ = -(cardOffset * 4f * spread)
                                 transformOrigin = TransformOrigin(0.5f, 0.5f)
                             }
                     )
@@ -304,6 +323,21 @@ fun AiSideArea(
         label = "aiSideRoleColor"
     )
 
+    val spreadFactor = remember { Animatable(if (player.hand.size > 0) 1f else 0f) }
+    val prevHandSize = remember { mutableIntStateOf(player.hand.size) }
+    LaunchedEffect(player.hand.size) {
+        val prev = prevHandSize.intValue
+        prevHandSize.intValue = player.hand.size
+        when {
+            player.hand.size == 0 -> spreadFactor.snapTo(0f)
+            player.hand.size > prev -> {
+                spreadFactor.snapTo(0f)
+                spreadFactor.animateTo(1f, tween(460, easing = FastOutSlowInEasing))
+            }
+        }
+    }
+    val spread = spreadFactor.value
+
     val cardWidth  = LocalCardWidth.current
     val cardHeight = LocalCardHeight.current
     Box(
@@ -333,11 +367,11 @@ fun AiSideArea(
                         card = Card.SuitedCard(Suit.SPADES, Rank.ACE),
                         faceDown = true,
                         modifier = Modifier
-                            .offset(y = (cardOffset * 14).dp)
+                            .offset(y = (cardOffset * 14 * spread).dp)
                             .offset { IntOffset(-(cardHeight * 0.2f).roundToPx(), 0) }
                             .zIndex(idx.toFloat())
                             .graphicsLayer {
-                                rotationZ = 90f + cardOffset * 4f
+                                rotationZ = 90f + cardOffset * 4f * spread
                                 transformOrigin = TransformOrigin(0.5f, 0.5f)
                             }
                     )
