@@ -364,16 +364,18 @@ fun AiSideArea(
 
     val cardWidth  = LocalCardWidth.current
     val cardHeight = LocalCardHeight.current
-    Box(
+    val faceDownCards = minOf(player.hand.size, 8)
+
+    Row(
         modifier = modifier
             .fillMaxHeight()
-            .width(cardHeight * 0.8f + 20.dp)
-            .padding(end = 4.dp)
+            .padding(end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        val faceDownCards = minOf(player.hand.size, 8)
-
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(cardHeight * 0.8f + 20.dp),
             contentAlignment = Alignment.Center
         ) {
             Box(
@@ -407,13 +409,9 @@ fun AiSideArea(
         }
 
         if (bubbleText != null) {
-            PassBubble(text = bubbleText, modifier = Modifier.align(Alignment.CenterEnd))
+            PassBubble(text = bubbleText)
         } else if (roleLabel != null) {
-            RolePill(
-                text = roleLabel,
-                color = roleLabelColor,
-                modifier = Modifier.align(Alignment.CenterEnd).rotate(90f)
-            )
+            RolePill(text = roleLabel, color = roleLabelColor, modifier = Modifier.rotate(90f))
         }
     }
 }
