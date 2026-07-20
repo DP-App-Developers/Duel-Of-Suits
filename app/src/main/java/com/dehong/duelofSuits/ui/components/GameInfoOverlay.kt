@@ -38,7 +38,6 @@ import com.dehong.duelofSuits.model.GamePhase
 import com.dehong.duelofSuits.model.GameState
 import com.dehong.duelofSuits.ui.animation.LocalTableResizing
 import com.dehong.duelofSuits.ui.theme.DangerRed
-import com.dehong.duelofSuits.ui.theme.TextOnDark
 
 private val BTN_SHAPE = RoundedCornerShape(14.dp)
 
@@ -71,16 +70,14 @@ fun GameInfoOverlay(
             }
 
             state.phase == GamePhase.THROW_IN_PHASE && state.isHumanTurn -> {
-                if (state.selectedCards.isNotEmpty()) {
-                    ActionButton(
-                        label = "THROW IN",
-                        enabled = notBusy,
-                        topColor = Color(0xFF42A5F5),
-                        bottomColor = Color(0xFF1565C0),
-                        glowColor = Color(0xFF1976D2),
-                        onClick = onPlaySelected
-                    )
-                }
+                ActionButton(
+                    label = "THROW IN",
+                    enabled = state.selectedCards.isNotEmpty() && notBusy,
+                    topColor = Color(0xFF42A5F5),
+                    bottomColor = Color(0xFF1565C0),
+                    glowColor = Color(0xFF1976D2),
+                    onClick = onPlaySelected
+                )
                 GhostButton(
                     label = "PASS",
                     enabled = notBusy,
@@ -179,15 +176,15 @@ private fun ActionButton(
                 enabled = enabled,
                 onClick = onClick
             )
-            .padding(horizontal = 20.dp, vertical = 15.dp),
+            .padding(horizontal = 14.dp, vertical = 11.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
             color = Color.White.copy(alpha = if (enabled) 1f else 0.35f),
-            fontSize = 14.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 1.8.sp
+            letterSpacing = 1.4.sp
         )
     }
 }
@@ -206,32 +203,56 @@ private fun GhostButton(
         label = "ghostScale"
     )
 
+    val alpha = if (enabled) 1f else 0.40f
+    val gradient = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF2D3748).copy(alpha = alpha),
+            Color(0xFF1A202C).copy(alpha = alpha)
+        )
+    )
+
     Box(
         modifier = Modifier
             .graphicsLayer { scaleX = scale; scaleY = scale }
-            .fillMaxWidth()
-            .border(
-                width = 1.dp,
-                color = TextOnDark.copy(alpha = if (enabled) 0.28f else 0.10f),
-                shape = BTN_SHAPE
+            .shadow(
+                elevation = if (enabled) 5.dp else 1.dp,
+                shape = BTN_SHAPE,
+                ambientColor = Color.Black.copy(alpha = 0.5f),
+                spotColor = Color.Black.copy(alpha = 0.5f)
             )
+            .fillMaxWidth()
             .clip(BTN_SHAPE)
-            .background(Color.Black.copy(alpha = 0.22f))
+            .background(gradient)
+            .drawWithContent {
+                drawContent()
+                drawLine(
+                    color = Color.White.copy(alpha = if (enabled) 0.14f else 0.04f),
+                    start = Offset(14.dp.toPx(), 1.5.dp.toPx()),
+                    end = Offset(size.width - 14.dp.toPx(), 1.5.dp.toPx()),
+                    strokeWidth = 1.5.dp.toPx()
+                )
+                drawLine(
+                    color = Color.Black.copy(alpha = 0.30f),
+                    start = Offset(14.dp.toPx(), size.height - 1.5.dp.toPx()),
+                    end = Offset(size.width - 14.dp.toPx(), size.height - 1.5.dp.toPx()),
+                    strokeWidth = 1.5.dp.toPx()
+                )
+            }
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 enabled = enabled,
                 onClick = onClick
             )
-            .padding(horizontal = 20.dp, vertical = 15.dp),
+            .padding(horizontal = 14.dp, vertical = 11.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
-            color = TextOnDark.copy(alpha = if (enabled) 0.58f else 0.22f),
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 2.2.sp
+            color = Color.White.copy(alpha = if (enabled) 0.72f else 0.28f),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.6.sp
         )
     }
 }
