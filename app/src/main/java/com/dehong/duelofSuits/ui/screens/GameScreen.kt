@@ -419,74 +419,70 @@ private fun FourPlayerLayout(
     passedPlayers: Map<Int, String>
 ) {
     val cardHeight = LocalCardHeight.current
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Top area: side AI + (top two AIs above the board)
-        Row(modifier = Modifier.fillMaxWidth().weight(0.62f)) {
-            // Player 1: vertical hand on the left side
-            AiSideArea(
-                player = state.players[1],
+    Row(modifier = Modifier.fillMaxSize()) {
+        // Player 1: vertical hand spanning the full screen height
+        AiSideArea(
+            player = state.players[1],
+            state = state,
+            registry = registry,
+            bubbleText = passedPlayers[state.players[1].id]
+        )
+
+        // Right side: top two AIs, board, and human hand — same proportions as other layouts
+        Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().weight(0.22f),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.Top
+            ) {
+                AiPlayerArea(
+                    player = state.players[2],
+                    state = state,
+                    registry = registry,
+                    bubbleText = passedPlayers[state.players[2].id],
+                    modifier = Modifier.weight(0.5f).fillMaxHeight()
+                )
+                AiPlayerArea(
+                    player = state.players[3],
+                    state = state,
+                    registry = registry,
+                    bubbleText = passedPlayers[state.players[3].id],
+                    modifier = Modifier.weight(0.5f).fillMaxHeight()
+                )
+            }
+            CenterPanel(
                 state = state,
                 registry = registry,
-                bubbleText = passedPlayers[state.players[1].id]
+                viewModel = viewModel,
+                modifier = Modifier.fillMaxWidth().weight(0.40f)
             )
-
-            // Remaining width: players 2,3 at top, board below — all in their own zones
-            Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+            Box(modifier = Modifier.fillMaxWidth().weight(0.38f)) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().weight(0.35f),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.Top
+                    modifier = Modifier.fillMaxSize(),
+                    verticalAlignment = Alignment.Bottom
                 ) {
-                    AiPlayerArea(
-                        player = state.players[2],
+                    Spacer(modifier = Modifier.weight(0.15f))
+                    PlayerHand(
+                        player = state.players[0],
                         state = state,
                         registry = registry,
-                        bubbleText = passedPlayers[state.players[2].id],
-                        modifier = Modifier.weight(0.5f).fillMaxHeight()
+                        onCardTapped = viewModel::onHumanCardTapped,
+                        getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
+                        modifier = Modifier.weight(0.70f).fillMaxHeight()
                     )
-                    AiPlayerArea(
-                        player = state.players[3],
+                    GameInfoOverlay(
                         state = state,
-                        registry = registry,
-                        bubbleText = passedPlayers[state.players[3].id],
-                        modifier = Modifier.weight(0.5f).fillMaxHeight()
+                        onPlaySelected = viewModel::onPlaySelectedPressed,
+                        onPass = viewModel::onPassPressed,
+                        onTakeCards = viewModel::onTakeCardsPressed,
+                        modifier = Modifier.weight(0.15f).fillMaxHeight()
                     )
                 }
-                CenterPanel(
-                    state = state,
-                    registry = registry,
-                    viewModel = viewModel,
-                    modifier = Modifier.fillMaxWidth().weight(0.65f)
-                )
-            }
-        }
-
-        Box(modifier = Modifier.fillMaxWidth().weight(0.38f)) {
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Spacer(modifier = Modifier.weight(0.15f))
-                PlayerHand(
-                    player = state.players[0],
-                    state = state,
-                    registry = registry,
-                    onCardTapped = viewModel::onHumanCardTapped,
-                    getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
-                    modifier = Modifier.weight(0.70f).fillMaxHeight()
-                )
-                GameInfoOverlay(
-                    state = state,
-                    onPlaySelected = viewModel::onPlaySelectedPressed,
-                    onPass = viewModel::onPassPressed,
-                    onTakeCards = viewModel::onTakeCardsPressed,
-                    modifier = Modifier.weight(0.15f).fillMaxHeight()
-                )
-            }
-            when {
-                0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-                state.attackerIndex == 0 -> Text("Attacker", color = Color(0xFFFF8F00), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-                state.defenderIndex == 0 -> Text("Defender", color = Color(0xFFB71C1C), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                when {
+                    0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                    state.attackerIndex == 0 -> Text("Attacker", color = Color(0xFFFF8F00), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                    state.defenderIndex == 0 -> Text("Defender", color = Color(0xFFB71C1C), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                }
             }
         }
     }
