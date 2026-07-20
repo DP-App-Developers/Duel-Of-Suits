@@ -175,7 +175,7 @@ fun AiPlayerArea(
                             .offset(x = (cardOffset * 14 * spread).dp)
                             .zIndex(idx.toFloat())
                             .graphicsLayer {
-                                rotationZ = -(cardOffset * 4f * spread)
+                                rotationZ = -(cardOffset * 6f * spread)
                                 transformOrigin = TransformOrigin(0.5f, 0.5f)
                             }
                     )
@@ -263,7 +263,7 @@ fun AiTopArea(
                             .offset(x = (cardOffset * 14 * spread).dp)
                             .zIndex(idx.toFloat())
                             .graphicsLayer {
-                                rotationZ = 180f - cardOffset * 4f * spread
+                                rotationZ = 180f - cardOffset * 6f * spread
                                 transformOrigin = TransformOrigin(0.5f, 0.5f)
                             }
                     )
@@ -348,7 +348,7 @@ fun AiSideArea(
                             .offset(y = (cardOffset * 14 * spread).dp)
                             .zIndex(idx.toFloat())
                             .graphicsLayer {
-                                rotationZ = 90f + cardOffset * 4f * spread
+                                rotationZ = 90f + cardOffset * 6f * spread
                                 transformOrigin = TransformOrigin(0.5f, 0.5f)
                             }
                     )
