@@ -28,7 +28,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -66,7 +65,6 @@ import com.dehong.duelofSuits.ui.animation.PositionRegistry
 import com.dehong.duelofSuits.ui.components.AiPlayerArea
 import com.dehong.duelofSuits.ui.components.AiSideArea
 import com.dehong.duelofSuits.ui.components.PassBubble
-import com.dehong.duelofSuits.ui.components.TurnArrow
 import com.dehong.duelofSuits.ui.components.CARD_HEIGHT
 import com.dehong.duelofSuits.ui.components.CARD_WIDTH
 import com.dehong.duelofSuits.ui.components.LocalCardHeight
@@ -221,19 +219,10 @@ private fun GameLayout(
     viewModel: GameViewModel,
     passedPlayers: Map<Int, String>
 ) {
-    val actualActiveIdx = computeActiveIndex(state)
-    // frozenActiveIdx holds the last non-animating active player, so the cursor
-    // stays on whoever played the card until the animation completes.
-    var frozenActiveIdx by remember { mutableIntStateOf(actualActiveIdx) }
-    LaunchedEffect(state.animating, actualActiveIdx) {
-        if (!state.animating) frozenActiveIdx = actualActiveIdx
-    }
-    val activeIdx = if (state.animating) frozenActiveIdx else actualActiveIdx
-
     when (state.playerCount) {
-        2 -> TwoPlayerLayout(state, registry, viewModel, activeIdx, passedPlayers)
-        4 -> FourPlayerLayout(state, registry, viewModel, activeIdx, passedPlayers)
-        else -> ThreePlayerLayout(state, registry, viewModel, activeIdx, passedPlayers)
+        2 -> TwoPlayerLayout(state, registry, viewModel, passedPlayers)
+        4 -> FourPlayerLayout(state, registry, viewModel, passedPlayers)
+        else -> ThreePlayerLayout(state, registry, viewModel, passedPlayers)
     }
 }
 
@@ -285,20 +274,6 @@ private fun CenterPanel(
     }
 }
 
-private fun computeActiveIndex(state: GameState): Int = when (state.phase) {
-    GamePhase.ATTACK_PHASE -> state.attackerIndex
-    GamePhase.DEFENSE_PHASE -> state.defenderIndex
-    GamePhase.THROW_IN_PHASE -> {
-        val startIdx = (state.attackerIndex + 1) % state.playerCount
-        (0 until state.playerCount)
-            .map { (startIdx + it) % state.playerCount }
-            .filter { it != state.defenderIndex }
-            .firstOrNull { it !in state.throwInPassedIndices }
-            ?: -1
-    }
-    else -> -1
-}
-
 // ── 2-player layout ──────────────────────────────────────────────────────────
 
 @Composable
@@ -306,7 +281,6 @@ private fun TwoPlayerLayout(
     state: GameState,
     registry: PositionRegistry,
     viewModel: GameViewModel,
-    activeIdx: Int,
     passedPlayers: Map<Int, String>
 ) {
     val cardHeight = LocalCardHeight.current
@@ -321,7 +295,6 @@ private fun TwoPlayerLayout(
                 player = state.players[1],
                 state = state,
                 registry = registry,
-                isActive = activeIdx == state.players[1].id,
                 bubbleText = passedPlayers[state.players[1].id],
                 modifier = Modifier.fillMaxWidth(0.5f).fillMaxHeight()
             )
@@ -358,7 +331,8 @@ private fun TwoPlayerLayout(
             }
             when {
                 0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-                activeIdx == state.players[0].id -> TurnArrow("▼", modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                state.attackerIndex == 0 -> Text("Attacker", color = Color(0xFFFF8F00), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                state.defenderIndex == 0 -> Text("Defender", color = Color(0xFFB71C1C), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
             }
         }
     }
@@ -371,7 +345,6 @@ private fun ThreePlayerLayout(
     state: GameState,
     registry: PositionRegistry,
     viewModel: GameViewModel,
-    activeIdx: Int,
     passedPlayers: Map<Int, String>
 ) {
     val cardHeight = LocalCardHeight.current
@@ -386,7 +359,6 @@ private fun ThreePlayerLayout(
                 player = state.players[1],
                 state = state,
                 registry = registry,
-                isActive = activeIdx == state.players[1].id,
                 bubbleText = passedPlayers[state.players[1].id],
                 modifier = Modifier.weight(0.5f).fillMaxHeight()
             )
@@ -394,7 +366,6 @@ private fun ThreePlayerLayout(
                 player = state.players[2],
                 state = state,
                 registry = registry,
-                isActive = activeIdx == state.players[2].id,
                 bubbleText = passedPlayers[state.players[2].id],
                 modifier = Modifier.weight(0.5f).fillMaxHeight()
             )
@@ -431,7 +402,8 @@ private fun ThreePlayerLayout(
             }
             when {
                 0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-                activeIdx == state.players[0].id -> TurnArrow("▼", modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                state.attackerIndex == 0 -> Text("Attacker", color = Color(0xFFFF8F00), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                state.defenderIndex == 0 -> Text("Defender", color = Color(0xFFB71C1C), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
             }
         }
     }
@@ -444,7 +416,6 @@ private fun FourPlayerLayout(
     state: GameState,
     registry: PositionRegistry,
     viewModel: GameViewModel,
-    activeIdx: Int,
     passedPlayers: Map<Int, String>
 ) {
     val cardHeight = LocalCardHeight.current
@@ -456,7 +427,6 @@ private fun FourPlayerLayout(
                 player = state.players[1],
                 state = state,
                 registry = registry,
-                isActive = activeIdx == state.players[1].id,
                 bubbleText = passedPlayers[state.players[1].id]
             )
 
@@ -471,7 +441,6 @@ private fun FourPlayerLayout(
                         player = state.players[2],
                         state = state,
                         registry = registry,
-                        isActive = activeIdx == state.players[2].id,
                         bubbleText = passedPlayers[state.players[2].id],
                         modifier = Modifier.weight(0.5f).fillMaxHeight()
                     )
@@ -479,7 +448,6 @@ private fun FourPlayerLayout(
                         player = state.players[3],
                         state = state,
                         registry = registry,
-                        isActive = activeIdx == state.players[3].id,
                         bubbleText = passedPlayers[state.players[3].id],
                         modifier = Modifier.weight(0.5f).fillMaxHeight()
                     )
@@ -517,7 +485,8 @@ private fun FourPlayerLayout(
             }
             when {
                 0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-                activeIdx == state.players[0].id -> TurnArrow("▼", modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                state.attackerIndex == 0 -> Text("Attacker", color = Color(0xFFFF8F00), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                state.defenderIndex == 0 -> Text("Defender", color = Color(0xFFB71C1C), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
             }
         }
     }
