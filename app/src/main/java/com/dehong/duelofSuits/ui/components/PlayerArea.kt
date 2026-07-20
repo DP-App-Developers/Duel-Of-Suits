@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -83,6 +84,26 @@ internal fun PassBubble(text: String = "PASS", modifier: Modifier = Modifier) {
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp
+        )
+    }
+}
+
+@Composable
+internal fun RolePill(text: String, color: Color, modifier: Modifier = Modifier) {
+    val pillShape = RoundedCornerShape(50)
+    Box(
+        modifier = modifier
+            .background(color.copy(alpha = 0.14f), pillShape)
+            .border(0.8.dp, color.copy(alpha = 0.50f), pillShape)
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text.uppercase(),
+            color = color,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 1.2.sp
         )
     }
 }
@@ -169,13 +190,7 @@ fun AiPlayerArea(
         if (bubbleText != null) {
             PassBubble(text = bubbleText)
         } else if (roleLabel != null) {
-            Text(
-                text = roleLabel,
-                color = roleLabelColor,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp
-            )
+            RolePill(text = roleLabel, color = roleLabelColor)
         }
     }
 }
@@ -263,13 +278,7 @@ fun AiTopArea(
         if (bubbleText != null) {
             PassBubble(text = bubbleText)
         } else if (roleLabel != null) {
-            Text(
-                text = roleLabel,
-                color = roleLabelColor,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp
-            )
+            RolePill(text = roleLabel, color = roleLabelColor)
         }
     }
 }
@@ -355,12 +364,9 @@ fun AiSideArea(
             if (bubbleText != null) {
                 PassBubble(text = bubbleText)
             } else if (roleLabel != null) {
-                Text(
+                RolePill(
                     text = roleLabel,
                     color = roleLabelColor,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp,
                     modifier = Modifier.rotate(90f)
                 )
             }

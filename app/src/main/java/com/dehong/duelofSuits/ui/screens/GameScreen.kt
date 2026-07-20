@@ -64,6 +64,7 @@ import com.dehong.duelofSuits.ui.animation.PositionRegistry
 import com.dehong.duelofSuits.ui.components.AiSideArea
 import com.dehong.duelofSuits.ui.components.AiTopArea
 import com.dehong.duelofSuits.ui.components.PassBubble
+import com.dehong.duelofSuits.ui.components.RolePill
 import com.dehong.duelofSuits.ui.components.CARD_HEIGHT
 import com.dehong.duelofSuits.ui.components.CARD_WIDTH
 import com.dehong.duelofSuits.ui.components.LocalCardHeight
@@ -328,8 +329,8 @@ private fun GameLayout(
             }
             when {
                 0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-                state.attackerIndex == 0 -> Text("Attacker", color = Color(0xFFFF8F00), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-                state.defenderIndex == 0 -> Text("Defender", color = Color(0xFFB71C1C), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                state.attackerIndex == 0 -> RolePill("Attacker", Color(0xFFFF8F00), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                state.defenderIndex == 0 -> RolePill("Defender", Color(0xFFB71C1C), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
             }
         }
     }
