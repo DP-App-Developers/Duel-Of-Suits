@@ -184,6 +184,12 @@ private fun DrawScope.drawCardBackPattern() {
 @Composable
 private fun CardFrontSuited(card: Card.SuitedCard, alpha: Float) {
     val textColor = if (card.suit.isRed) CardRed else CardBlack
+    val scale = LocalCardWidth.current.value / CARD_WIDTH.value
+    val rankSp  = (14f * scale).sp
+    val suitSp  = (11f * scale).sp
+    val centerSp = (22f * scale).sp
+    val padH = (3f * scale).dp
+    val padV = (2f * scale).dp
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -204,46 +210,46 @@ private fun CardFrontSuited(card: Card.SuitedCard, alpha: Float) {
         Column(
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 3.dp, top = 2.dp)
+                .padding(start = padH, top = padV)
         ) {
             Text(
                 text = card.rank.displayName,
                 color = textColor.copy(alpha = alpha),
-                fontSize = 14.sp,
+                fontSize = rankSp,
                 fontWeight = FontWeight.ExtraBold,
-                lineHeight = 14.sp
+                lineHeight = rankSp
             )
             Text(
                 text = card.suit.symbol,
                 color = textColor.copy(alpha = alpha),
-                fontSize = 11.sp,
-                lineHeight = 11.sp
+                fontSize = suitSp,
+                lineHeight = suitSp
             )
         }
         Text(
             text = card.suit.symbol,
             color = textColor.copy(alpha = alpha),
-            fontSize = 32.sp,
+            fontSize = centerSp,
             modifier = Modifier.align(Alignment.Center)
         )
         Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 3.dp, bottom = 2.dp),
+                .padding(end = padH, bottom = padV),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = card.suit.symbol,
                 color = textColor.copy(alpha = alpha),
-                fontSize = 11.sp,
-                lineHeight = 11.sp
+                fontSize = suitSp,
+                lineHeight = suitSp
             )
             Text(
                 text = card.rank.displayName,
                 color = textColor.copy(alpha = alpha),
-                fontSize = 14.sp,
+                fontSize = rankSp,
                 fontWeight = FontWeight.ExtraBold,
-                lineHeight = 14.sp
+                lineHeight = rankSp
             )
         }
     }
