@@ -30,7 +30,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -86,8 +85,6 @@ import kotlin.math.roundToInt
 
 val LocalPositionRegistry = staticCompositionLocalOf { PositionRegistry() }
 
-// Max attack slots displayed in row 1; any beyond this go to row 2 in GameTable.
-private const val ROW_THRESHOLD = 4
 
 @Composable
 fun GameScreen(
@@ -122,23 +119,10 @@ fun GameScreen(
     val cardHeight = cardWidth * (CARD_HEIGHT.value / CARD_WIDTH.value)
     val density = LocalDensity.current
 
-    // True while the table scale animation is running after a new attack slot is added.
-    var tableResizing by remember { mutableStateOf(false) }
-    // Drive tableResizing from actual state changes so it aligns with the real resize animation.
-    LaunchedEffect(state.tableSlots.size) {
-        if (state.tableSlots.size > 0) {
-            tableResizing = true
-            try {
-                delay(320L)
-            } finally {
-                tableResizing = false
-            }
-        }
-    }
-
     LaunchedEffect(Unit) {
         viewModel.animationEvents.collect { event ->
-            handleAnimationEvent(event, registry, flyingCards, scope, density, cardWidth, playerCount)
+            handleAnimationEvent(event, registry, flyingCards, scope, density, cardWidth, playerCount,
+                viewModel.boardNumCols.value)
             if (event is AnimationEvent.PlayerPassed) {
                 playerBubbles[event.playerIdx] = "PASS"
                 scope.launch {
@@ -161,7 +145,7 @@ fun GameScreen(
         LocalFlyingCards provides flyingCards.map { it.card }.toSet(),
         LocalCardWidth provides cardWidth,
         LocalCardHeight provides cardHeight,
-        LocalTableResizing provides tableResizing
+        LocalTableResizing provides false
     ) {
         Box(
             modifier = Modifier
@@ -256,6 +240,7 @@ private fun CenterPanel(
             state = state,
             registry = registry,
             onDefenseSlotTapped = if (state.tableClearing) { _ -> } else viewModel::onDefenseSlotTapped,
+            onNumColsChanged = viewModel::updateBoardNumCols,
             modifier = tableModifier
         )
         Column(
@@ -510,29 +495,29 @@ private fun FlyingCardLayer(flyingCards: List<FlyingCard>) {
     }
 }
 
-// GameTable always renders ROW_THRESHOLD placeholder Boxes (even for empty slots) which
-// register their positions immediately on first composition. So slot 0 is always registered
-// before any card animation fires — no need for complex extrapolation fallbacks.
+// GameTable always renders placeholder Boxes for every slot in the grid which register
+// their positions on first composition. So target slots are nearly always in the registry
+// before any card animation fires — this fallback is rarely reached.
 private fun estimateAttackSlotOffset(
     slotIndex: Int,
     registry: PositionRegistry,
     density: androidx.compose.ui.unit.Density,
-    cardWidth: androidx.compose.ui.unit.Dp
+    cardWidth: androidx.compose.ui.unit.Dp,
+    numCols: Int
 ): Offset {
     val defenseX   = cardWidth * (20f / 54f)
     val slotStepPx = with(density) { (cardWidth + defenseX + 12.dp).toPx() }
 
     val slot0 = registry.getOffset(PositionKey.AttackSlot(0))
     if (slot0 != Offset.Zero) {
-        val col         = slotIndex % ROW_THRESHOLD
-        val row         = slotIndex / ROW_THRESHOLD
+        val col         = slotIndex % numCols
+        val row         = slotIndex / numCols
         val cardHeight  = cardWidth * (78f / 54f)
         val defenseY    = cardWidth * (16f / 54f)
         val rowOffsetPx = with(density) { (cardHeight + defenseY + 8.dp).toPx() }
         return Offset(slot0.x + col * slotStepPx, slot0.y + row * rowOffsetPx)
     }
 
-    // Rare fallback: layout hasn't completed its first pass yet
     return registry.getOffset(PositionKey.DrawPile)
 }
 
@@ -543,7 +528,8 @@ private fun handleAnimationEvent(
     scope: kotlinx.coroutines.CoroutineScope,
     density: androidx.compose.ui.unit.Density,
     cardWidth: androidx.compose.ui.unit.Dp,
-    playerCount: Int
+    playerCount: Int,
+    numCols: Int
 ) {
     when (event) {
         is AnimationEvent.DealCard -> {
@@ -581,7 +567,7 @@ private fun handleAnimationEvent(
                     ?: registry.getOffset(PositionKey.PlayerArea(event.fromPlayerId))
                 val endOffset = registry.getOffset(PositionKey.AttackSlot(event.toSlotIndex))
                     .takeIf { it != Offset.Zero }
-                    ?: estimateAttackSlotOffset(event.toSlotIndex, registry, density, cardWidth)
+                    ?: estimateAttackSlotOffset(event.toSlotIndex, registry, density, cardWidth, numCols)
 
                 animateCard(
                     id = "play_${event.card.hashCode()}",

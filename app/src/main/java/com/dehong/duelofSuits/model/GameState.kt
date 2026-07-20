@@ -40,7 +40,9 @@ data class GameState(
     val winnerId: Int? = null,
     val throwInPassedIndices: Set<Int> = emptySet(),
     val animating: Boolean = false,
-    val tableClearing: Boolean = false
+    val tableClearing: Boolean = false,
+    // Pre-reserves table rows so the board can animate to the correct size before cards fly in.
+    val reservedSlotCount: Int = 0
 ) {
     val otherIndices: List<Int> get() = (0 until playerCount).filter { it != attackerIndex && it != defenderIndex }
     val otherIndex: Int get() = otherIndices.firstOrNull() ?: -1

@@ -1,9 +1,13 @@
 package com.dehong.duelofSuits.ui.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -33,33 +39,41 @@ import com.dehong.duelofSuits.ui.animation.PositionKey
 import com.dehong.duelofSuits.ui.animation.PositionRegistry
 import com.dehong.duelofSuits.ui.theme.HighlightCyan
 
-private val DEFENSE_X_RATIO = 20f / 54f
-private val DEFENSE_Y_RATIO = 16f / 78f
+// Each slot = attack card + defense-card offset stacked diagonally.
+// slotWidth  = cardWidth  * (54 + 20) / 54 = cardWidth  * 74/54
+// slotHeight = cardHeight * (78 + 16) / 78 = cardHeight * 94/78
+// Inverting (via aspect ratio cardHeight = cardWidth * 78/54):
+//   cardWidth from slot width  = slotWidth  * 54/74
+//   cardWidth from slot height = slotHeight * 54/94
+private const val CARD_W_FROM_SLOT_W = 54f / 74f
+private const val CARD_W_FROM_SLOT_H = 54f / 94f
+private const val DEFENSE_X_RATIO   = 20f / 54f
+private const val DEFENSE_Y_RATIO   = 16f / 78f
+private const val ASPECT_RATIO      = 78f / 54f   // cardHeight / cardWidth
 
-// Every row always contains exactly this many slot-columns (real cards or invisible placeholders).
-// Placeholders register their position immediately so flying-card animations always have a valid
-// target before the card state is committed, and every row is the same width.
-internal const val ROW_THRESHOLD = 4
+// Minimum column count; actual count grows to fill available width at hand-card size.
+internal const val MIN_COLS = 4
+private val COL_GAP = 12.dp
+private val ROW_GAP = 8.dp
 
 @Composable
 fun GameTable(
     state: GameState,
     registry: PositionRegistry,
     onDefenseSlotTapped: (Int) -> Unit,
+    onNumColsChanged: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    // Read card dimensions exactly once. Every slot receives these same values so all
-    // cards on the board are guaranteed identical in size, regardless of row or position.
-    val cardWidth  = LocalCardWidth.current
-    val cardHeight = LocalCardHeight.current
-    val defenseX   = cardWidth  * DEFENSE_X_RATIO
-    val defenseY   = cardHeight * DEFENSE_Y_RATIO
-    val slots      = state.tableSlots
-    val drawPileReserved = cardWidth * 1.5f + 8.dp
+    // Global card width (= hand card size) drives both draw-pile reservation and the
+    // board-card size cap so board cards are never larger than hand cards.
+    val globalCardWidth  = LocalCardWidth.current
+    val drawPileReserved = globalCardWidth * 1.5f + 8.dp
 
-    val numRows = if (slots.isEmpty()) 1 else (slots.size + ROW_THRESHOLD - 1) / ROW_THRESHOLD
+    val slots = state.tableSlots
+    // reservedSlotCount pre-sizes the board so rows expand before cards animate in.
+    val effectiveSlotCount = maxOf(slots.size, state.reservedSlotCount)
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
             .onGloballyPositioned { coords ->
@@ -67,42 +81,86 @@ fun GameTable(
             },
         contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(end = drawPileReserved),
-            contentAlignment = Alignment.Center
+        val gridWidth  = maxWidth - drawPileReserved
+        // Guard against unconstrained height (should not occur given weight(0.40f) on CenterPanel).
+        val gridHeight = if (maxHeight.value.isInfinite()) globalCardWidth * ASPECT_RATIO * 2.6f
+                         else maxHeight
+
+        // How many columns fit at the global (hand) card size? At least MIN_COLS.
+        val globalSlotWidth = globalCardWidth * (74f / 54f)
+        val numCols = ((gridWidth + COL_GAP) / (globalSlotWidth + COL_GAP))
+            .toInt()
+            .coerceAtLeast(MIN_COLS)
+
+        // Report numCols whenever it changes so the ViewModel can sequence animations.
+        LaunchedEffect(numCols) { onNumColsChanged(numCols) }
+
+        val numRows = if (effectiveSlotCount == 0) 1
+                      else (effectiveSlotCount + numCols - 1) / numCols
+
+        // Slot dimensions that tile the available area across numCols × numRows.
+        val slotWidth  = (gridWidth  - COL_GAP * (numCols - 1)) / numCols
+        val slotHeight = (gridHeight - ROW_GAP  * (numRows  - 1)) / numRows
+
+        // Tightest constraint wins; cap at global card size so board ≤ hand.
+        val targetCardWidth = minOf(slotWidth * CARD_W_FROM_SLOT_W, slotHeight * CARD_W_FROM_SLOT_H)
+            .coerceAtMost(globalCardWidth)
+            .coerceAtLeast(8.dp)
+
+        val animatedW by animateFloatAsState(
+            targetValue   = targetCardWidth.value,
+            animationSpec = tween(350, easing = FastOutSlowInEasing),
+            label         = "boardCardWidth"
+        )
+
+        val boardCardWidth  = animatedW.dp
+        val boardCardHeight = boardCardWidth  * ASPECT_RATIO
+        val defenseX        = boardCardWidth  * DEFENSE_X_RATIO
+        val defenseY        = boardCardHeight * DEFENSE_Y_RATIO
+
+        // Override card-size locals so every card inside the board uses the animated size;
+        // hand cards, flying cards, and the draw pile keep the global size.
+        CompositionLocalProvider(
+            LocalCardWidth  provides boardCardWidth,
+            LocalCardHeight provides boardCardHeight
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = drawPileReserved),
+                contentAlignment = Alignment.Center
             ) {
-                for (row in 0 until numRows) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        for (col in 0 until ROW_THRESHOLD) {
-                            val i = row * ROW_THRESHOLD + col
-                            if (i < slots.size) {
-                                TableSlotView(
-                                    slot                = slots[i],
-                                    slotIndex           = i,
-                                    state               = state,
-                                    registry            = registry,
-                                    cardWidth           = cardWidth,
-                                    cardHeight          = cardHeight,
-                                    defenseX            = defenseX,
-                                    defenseY            = defenseY,
-                                    onDefenseSlotTapped = onDefenseSlotTapped
-                                )
-                            } else {
-                                // Invisible placeholder: same dimensions as a real slot so the
-                                // row width is stable and the registered position is always valid.
-                                Box(
-                                    modifier = Modifier
-                                        .requiredSize(cardWidth + defenseX, cardHeight + defenseY)
-                                        .onGloballyPositioned { coords ->
-                                            registry.register(PositionKey.AttackSlot(i), coords)
-                                        }
-                                )
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(ROW_GAP),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    for (row in 0 until numRows) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(COL_GAP)) {
+                            for (col in 0 until numCols) {
+                                val i = row * numCols + col
+                                if (i < slots.size) {
+                                    TableSlotView(
+                                        slot                = slots[i],
+                                        slotIndex           = i,
+                                        state               = state,
+                                        registry            = registry,
+                                        cardWidth           = boardCardWidth,
+                                        cardHeight          = boardCardHeight,
+                                        defenseX            = defenseX,
+                                        defenseY            = defenseY,
+                                        onDefenseSlotTapped = onDefenseSlotTapped
+                                    )
+                                } else {
+                                    // Invisible placeholder: registers position immediately so
+                                    // flying-card animations always have a valid target.
+                                    Box(
+                                        modifier = Modifier
+                                            .requiredSize(boardCardWidth + defenseX, boardCardHeight + defenseY)
+                                            .onGloballyPositioned { coords ->
+                                                registry.register(PositionKey.AttackSlot(i), coords)
+                                            }
+                                    )
+                                }
                             }
                         }
                     }
@@ -124,23 +182,19 @@ private fun TableSlotView(
     defenseY: Dp,
     onDefenseSlotTapped: (Int) -> Unit
 ) {
-    val isHumanDefender = state.isHumanDefender && state.phase == GamePhase.DEFENSE_PHASE
+    val isHumanDefender  = state.isHumanDefender && state.phase == GamePhase.DEFENSE_PHASE
     val selectedHandCard = state.selectedHandCardForDefense
     val canDefendThisSlot = isHumanDefender && slot.defenseCard == null &&
             selectedHandCard != null &&
             GameEngine.canDefend(slot.attackCard, selectedHandCard, state.trumpSuit)
     val flyingCards = LocalFlyingCards.current
 
-    // Pin exact card dimensions for all CardView children in this slot so that attack
-    // and defense cards are pixel-identical in size regardless of any parent constraint.
     CompositionLocalProvider(
         LocalCardWidth  provides cardWidth,
         LocalCardHeight provides cardHeight
     ) {
-        // requiredSize ignores incoming parent constraints — slot dimensions are always exact.
         Box(modifier = Modifier.requiredSize(cardWidth + defenseX, cardHeight + defenseY)) {
 
-            // Attack card — wrapped in a requiredSize box so the card cannot be squeezed.
             Box(
                 modifier = Modifier
                     .align(Alignment.TopStart)
@@ -154,7 +208,6 @@ private fun TableSlotView(
             }
 
             if (slot.defenseCard != null) {
-                // Defense card — same hard-sized wrapper.
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopStart)

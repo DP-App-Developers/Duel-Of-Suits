@@ -24,6 +24,10 @@ import kotlinx.coroutines.launch
 
 private val PLAYER_NAMES = listOf("You", "Alex", "Sam", "Ryan")
 
+// Time to wait after reserving slots before emitting fly animations, so the board
+// resize animation (tween 350ms) finishes before cards start moving.
+private const val RESIZE_ANIM_WAIT_MS = 400L
+
 class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
 
     private val _gameState = MutableStateFlow(createInitialState())
@@ -34,6 +38,14 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    // Tracks the column count computed by GameTable so animation sequencing uses the real value.
+    private val _boardNumCols = MutableStateFlow(4)
+    val boardNumCols: StateFlow<Int> = _boardNumCols.asStateFlow()
+
+    fun updateBoardNumCols(cols: Int) {
+        if (_boardNumCols.value != cols) _boardNumCols.value = cols
+    }
 
     init {
         startGame()
@@ -240,8 +252,8 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
                     val newState = GameEngine.processAttack(selected, 0, state)
                     _gameState.value = state.copy(players = newState.players, selectedCards = emptySet(), animating = true)
                     emitPlayCardAnimations(selected, 0, state.tableSlots.size)
-                    delay(200L * (selected.size - 1) + 500L)
-                    _gameState.value = newState.copy(animating = false)
+                    delay(500L)
+                    _gameState.value = newState.copy(animating = false, reservedSlotCount = 0)
                     checkAndRunAiTurn()
                 }
             }
@@ -253,8 +265,8 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
                     val newState = GameEngine.processThrowIn(selected, 0, state)
                     _gameState.value = state.copy(players = newState.players, selectedCards = emptySet(), animating = true)
                     emitPlayCardAnimations(selected, 0, state.tableSlots.size)
-                    delay(200L * (selected.size - 1) + 500L)
-                    _gameState.value = newState.copy(animating = false)
+                    delay(500L)
+                    _gameState.value = newState.copy(animating = false, reservedSlotCount = 0)
                     checkAndRunAiTurn()
                 }
             }
@@ -383,8 +395,8 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
         val newState = GameEngine.processAttack(cards, attackerIdx, currentState)
         _gameState.value = currentState.copy(players = newState.players, selectedCards = emptySet(), animating = true)
         emitPlayCardAnimations(cards, attackerIdx, currentState.tableSlots.size)
-        delay(200L * (cards.size - 1) + 500L)
-        _gameState.value = newState.copy(animating = false)
+        delay(500L)
+        _gameState.value = newState.copy(animating = false, reservedSlotCount = 0)
 
         delay(600L)
         checkAndRunAiTurn()
@@ -420,9 +432,9 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             val newState = GameEngine.processThrowIn(cards, playerIdx, currentState)
             _gameState.value = currentState.copy(players = newState.players, selectedCards = emptySet(), animating = true)
             emitPlayCardAnimations(cards, playerIdx, currentState.tableSlots.size)
-            delay(200L * (cards.size - 1) + 500L)
-            _gameState.value = newState.copy(animating = false)
             delay(500L)
+            _gameState.value = newState.copy(animating = false, reservedSlotCount = 0)
+            delay(300L)
         }
 
         delay(300L)
@@ -526,20 +538,31 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
 
     // ── Animation Helpers ───────────────────────────────────────────────────
 
-    private fun emitPlayCardAnimations(cards: List<Card>, playerIdx: Int, startSlotIdx: Int) {
-        viewModelScope.launch {
-            cards.forEachIndexed { i, card ->
-                delay(if (i == 0) 0L else 200L)
-                _animationEvents.emit(
-                    AnimationEvent.PlayCardToTable(
-                        card = card,
-                        fromPlayerId = playerIdx,
-                        toSlotIndex = startSlotIdx + i
-                    )
+    // Emits flying-card events one by one (200 ms apart). If the new cards require an extra row,
+    // first reserves the slots so the board can animate to the new size, then waits for the
+    // resize to finish before the first card event is emitted.
+    private suspend fun emitPlayCardAnimations(cards: List<Card>, playerIdx: Int, startSlotIdx: Int) {
+        val numCols = _boardNumCols.value.coerceAtLeast(1)
+        val oldRows = rowsNeeded(startSlotIdx, numCols)
+        val newRows = rowsNeeded(startSlotIdx + cards.size, numCols)
+        if (newRows > oldRows) {
+            _gameState.value = _gameState.value.copy(reservedSlotCount = startSlotIdx + cards.size)
+            delay(RESIZE_ANIM_WAIT_MS)
+        }
+        cards.forEachIndexed { i, card ->
+            if (i > 0) delay(200L)
+            _animationEvents.emit(
+                AnimationEvent.PlayCardToTable(
+                    card = card,
+                    fromPlayerId = playerIdx,
+                    toSlotIndex = startSlotIdx + i
                 )
-            }
+            )
         }
     }
+
+    private fun rowsNeeded(slotCount: Int, numCols: Int): Int =
+        if (slotCount == 0) 1 else (slotCount + numCols - 1) / numCols
 
     private fun emitDefenseCardAnimation(card: Card, playerIdx: Int, slotIdx: Int) {
         viewModelScope.launch {
