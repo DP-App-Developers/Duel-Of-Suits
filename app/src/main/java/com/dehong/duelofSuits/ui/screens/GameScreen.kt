@@ -61,8 +61,8 @@ import com.dehong.duelofSuits.ui.animation.LocalFlyingCards
 import com.dehong.duelofSuits.ui.animation.LocalTableResizing
 import com.dehong.duelofSuits.ui.animation.PositionKey
 import com.dehong.duelofSuits.ui.animation.PositionRegistry
-import com.dehong.duelofSuits.ui.components.AiPlayerArea
 import com.dehong.duelofSuits.ui.components.AiSideArea
+import com.dehong.duelofSuits.ui.components.AiTopArea
 import com.dehong.duelofSuits.ui.components.PassBubble
 import com.dehong.duelofSuits.ui.components.CARD_HEIGHT
 import com.dehong.duelofSuits.ui.components.CARD_WIDTH
@@ -203,22 +203,7 @@ private fun GameLayout(
     viewModel: GameViewModel,
     passedPlayers: Map<Int, String>
 ) {
-    when (state.playerCount) {
-        2 -> TwoPlayerLayout(state, registry, viewModel, passedPlayers)
-        4 -> FourPlayerLayout(state, registry, viewModel, passedPlayers)
-        else -> ThreePlayerLayout(state, registry, viewModel, passedPlayers)
-    }
-}
-
-// ── Center panel (draw pile + table) shared across all layouts ──────────────
-
-@Composable
-private fun CenterPanel(
-    state: GameState,
-    registry: PositionRegistry,
-    viewModel: GameViewModel,
-    modifier: Modifier = Modifier
-) {
+    val cardHeight = LocalCardHeight.current
     val tableAlpha = remember { Animatable(1f) }
     LaunchedEffect(state.tableClearing) {
         if (state.tableClearing) {
@@ -229,141 +214,97 @@ private fun CenterPanel(
         }
     }
 
-    // Draw pile lives here so it's always vertically co-located with the board,
-    // never floating over player hands or AI areas.
-    Box(
-        modifier = modifier.padding(vertical = 6.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        val tableModifier = if (state.tableClearing) Modifier.alpha(tableAlpha.value) else Modifier
-        GameTable(
-            state = state,
-            registry = registry,
-            onDefenseSlotTapped = if (state.tableClearing) { _ -> } else viewModel::onDefenseSlotTapped,
-            onNumColsChanged = viewModel::updateBoardNumCols,
-            modifier = tableModifier
-        )
-        Column(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            DrawPile(
-                count = state.drawPileCount,
-                registry = registry,
-                trumpCard = state.trumpCard
-            )
-        }
-    }
-}
-
-// ── 2-player layout ──────────────────────────────────────────────────────────
-
-@Composable
-private fun TwoPlayerLayout(
-    state: GameState,
-    registry: PositionRegistry,
-    viewModel: GameViewModel,
-    passedPlayers: Map<Int, String>
-) {
-    val cardHeight = LocalCardHeight.current
     Column(modifier = Modifier.fillMaxSize()) {
-        // AI hand: its own dedicated zone, never overlaps the board below
+
+        // TOP: fixed height fits portrait card + badge label below
         Row(
-            modifier = Modifier.fillMaxWidth().weight(0.22f),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.Top
-        ) {
-            AiPlayerArea(
-                player = state.players[1],
-                state = state,
-                registry = registry,
-                bubbleText = passedPlayers[state.players[1].id],
-                modifier = Modifier.fillMaxWidth(0.5f).fillMaxHeight()
-            )
-        }
-
-        CenterPanel(
-            state = state,
-            registry = registry,
-            viewModel = viewModel,
-            modifier = Modifier.fillMaxWidth().weight(0.40f)
-        )
-
-        Box(modifier = Modifier.fillMaxWidth().weight(0.38f)) {
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Spacer(modifier = Modifier.weight(0.15f))
-                PlayerHand(
-                    player = state.players[0],
-                    state = state,
-                    registry = registry,
-                    onCardTapped = viewModel::onHumanCardTapped,
-                    getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
-                    modifier = Modifier.weight(0.70f).fillMaxHeight()
-                )
-                GameInfoOverlay(
-                    state = state,
-                    onPlaySelected = viewModel::onPlaySelectedPressed,
-                    onPass = viewModel::onPassPressed,
-                    onTakeCards = viewModel::onTakeCardsPressed,
-                    modifier = Modifier.weight(0.15f).fillMaxHeight()
-                )
-            }
-            when {
-                0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-                state.attackerIndex == 0 -> Text("Attacker", color = Color(0xFFFF8F00), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-                state.defenderIndex == 0 -> Text("Defender", color = Color(0xFFB71C1C), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-            }
-        }
-    }
-}
-
-// ── 3-player layout ──────────────────────────────────────────────────────────
-
-@Composable
-private fun ThreePlayerLayout(
-    state: GameState,
-    registry: PositionRegistry,
-    viewModel: GameViewModel,
-    passedPlayers: Map<Int, String>
-) {
-    val cardHeight = LocalCardHeight.current
-    Column(modifier = Modifier.fillMaxSize()) {
-        // AI players: own dedicated row at the top, no overlap with the board
-        Row(
-            modifier = Modifier.fillMaxWidth().weight(0.22f),
+            modifier = Modifier.fillMaxWidth().height(cardHeight + 24.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.Top
         ) {
-            AiPlayerArea(
-                player = state.players[1],
-                state = state,
-                registry = registry,
-                bubbleText = passedPlayers[state.players[1].id],
-                modifier = Modifier.weight(0.5f).fillMaxHeight()
-            )
-            AiPlayerArea(
-                player = state.players[2],
-                state = state,
-                registry = registry,
-                bubbleText = passedPlayers[state.players[2].id],
-                modifier = Modifier.weight(0.5f).fillMaxHeight()
-            )
+            when (state.playerCount) {
+                2 -> AiTopArea(
+                    player = state.players[1],
+                    state = state,
+                    registry = registry,
+                    bubbleText = passedPlayers[state.players[1].id],
+                    modifier = Modifier.fillMaxWidth().fillMaxHeight()
+                )
+                3 -> {
+                    AiTopArea(
+                        player = state.players[1],
+                        state = state,
+                        registry = registry,
+                        bubbleText = passedPlayers[state.players[1].id],
+                        modifier = Modifier.weight(0.5f).fillMaxHeight()
+                    )
+                    AiTopArea(
+                        player = state.players[2],
+                        state = state,
+                        registry = registry,
+                        bubbleText = passedPlayers[state.players[2].id],
+                        modifier = Modifier.weight(0.5f).fillMaxHeight()
+                    )
+                }
+                else -> {
+                    AiTopArea(
+                        player = state.players[2],
+                        state = state,
+                        registry = registry,
+                        bubbleText = passedPlayers[state.players[2].id],
+                        modifier = Modifier.weight(0.5f).fillMaxHeight()
+                    )
+                    AiTopArea(
+                        player = state.players[3],
+                        state = state,
+                        registry = registry,
+                        bubbleText = passedPlayers[state.players[3].id],
+                        modifier = Modifier.weight(0.5f).fillMaxHeight()
+                    )
+                }
+            }
         }
 
-        CenterPanel(
-            state = state,
-            registry = registry,
-            viewModel = viewModel,
-            modifier = Modifier.fillMaxWidth().weight(0.40f)
-        )
+        // MIDDLE: [left player (4p only)] | board | draw pile — takes all remaining space
+        Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            if (state.playerCount == 4) {
+                AiSideArea(
+                    player = state.players[1],
+                    state = state,
+                    registry = registry,
+                    bubbleText = passedPlayers[state.players[1].id]
+                )
+            }
 
-        Box(modifier = Modifier.fillMaxWidth().weight(0.38f)) {
+            Box(
+                modifier = Modifier.weight(1f).fillMaxHeight().padding(vertical = 6.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                val tableModifier = if (state.tableClearing) Modifier.alpha(tableAlpha.value) else Modifier
+                GameTable(
+                    state = state,
+                    registry = registry,
+                    onDefenseSlotTapped = if (state.tableClearing) { _ -> } else viewModel::onDefenseSlotTapped,
+                    onNumColsChanged = viewModel::updateBoardNumCols,
+                    modifier = tableModifier
+                )
+            }
+
+            Column(
+                modifier = Modifier.fillMaxHeight().padding(end = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                DrawPile(
+                    count = state.drawPileCount,
+                    registry = registry,
+                    trumpCard = state.trumpCard
+                )
+            }
+        }
+
+        // BOTTOM: fixed height based on card size so it doesn't over-consume vertical space
+        Box(modifier = Modifier.fillMaxWidth().height(cardHeight * 1.4f + 16.dp)) {
             Row(
                 modifier = Modifier.fillMaxSize(),
                 verticalAlignment = Alignment.Bottom
@@ -389,85 +330,6 @@ private fun ThreePlayerLayout(
                 0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
                 state.attackerIndex == 0 -> Text("Attacker", color = Color(0xFFFF8F00), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
                 state.defenderIndex == 0 -> Text("Defender", color = Color(0xFFB71C1C), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-            }
-        }
-    }
-}
-
-// ── 4-player layout ──────────────────────────────────────────────────────────
-
-@Composable
-private fun FourPlayerLayout(
-    state: GameState,
-    registry: PositionRegistry,
-    viewModel: GameViewModel,
-    passedPlayers: Map<Int, String>
-) {
-    val cardHeight = LocalCardHeight.current
-    Row(modifier = Modifier.fillMaxSize()) {
-        // Player 1: vertical hand spanning the full screen height
-        AiSideArea(
-            player = state.players[1],
-            state = state,
-            registry = registry,
-            bubbleText = passedPlayers[state.players[1].id]
-        )
-
-        // Right side: top two AIs, board, and human hand — same proportions as other layouts
-        Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-            Row(
-                modifier = Modifier.fillMaxWidth().weight(0.22f),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.Top
-            ) {
-                AiPlayerArea(
-                    player = state.players[2],
-                    state = state,
-                    registry = registry,
-                    bubbleText = passedPlayers[state.players[2].id],
-                    modifier = Modifier.weight(0.5f).fillMaxHeight()
-                )
-                AiPlayerArea(
-                    player = state.players[3],
-                    state = state,
-                    registry = registry,
-                    bubbleText = passedPlayers[state.players[3].id],
-                    modifier = Modifier.weight(0.5f).fillMaxHeight()
-                )
-            }
-            CenterPanel(
-                state = state,
-                registry = registry,
-                viewModel = viewModel,
-                modifier = Modifier.fillMaxWidth().weight(0.40f)
-            )
-            Box(modifier = Modifier.fillMaxWidth().weight(0.38f)) {
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    Spacer(modifier = Modifier.weight(0.15f))
-                    PlayerHand(
-                        player = state.players[0],
-                        state = state,
-                        registry = registry,
-                        onCardTapped = viewModel::onHumanCardTapped,
-                        getSelectionState = { card -> viewModel.getCardSelectionState(card, state) },
-                        modifier = Modifier.weight(0.70f).fillMaxHeight()
-                    )
-                    GameInfoOverlay(
-                        state = state,
-                        onPlaySelected = viewModel::onPlaySelectedPressed,
-                        onPass = viewModel::onPassPressed,
-                        onTakeCards = viewModel::onTakeCardsPressed,
-                        modifier = Modifier.weight(0.15f).fillMaxHeight()
-                    )
-                }
-                when {
-                    0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-                    state.attackerIndex == 0 -> Text("Attacker", color = Color(0xFFFF8F00), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-                    state.defenderIndex == 0 -> Text("Defender", color = Color(0xFFB71C1C), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-                }
             }
         }
     }

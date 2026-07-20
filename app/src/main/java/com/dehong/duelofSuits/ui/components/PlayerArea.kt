@@ -180,6 +180,100 @@ fun AiPlayerArea(
     }
 }
 
+// Top AI area — portrait cards flipped 180° (player looking down), fanned left-right.
+@Composable
+fun AiTopArea(
+    player: Player,
+    state: GameState,
+    registry: PositionRegistry,
+    bubbleText: String? = null,
+    modifier: Modifier = Modifier
+) {
+    val isDefender = state.defenderIndex == player.id
+    val isAttacker = state.attackerIndex == player.id
+    val roleLabel = when {
+        isAttacker -> "Attacker"
+        isDefender -> "Defender"
+        else -> null
+    }
+    val roleLabelColor = if (isAttacker) Color(0xFFFF8F00) else Color(0xFFB71C1C)
+
+    val spreadFactor = remember { Animatable(if (player.hand.size > 0) 1f else 0f) }
+    val prevHandSize = remember { mutableIntStateOf(player.hand.size) }
+    LaunchedEffect(player.hand.size) {
+        val prev = prevHandSize.intValue
+        prevHandSize.intValue = player.hand.size
+        when {
+            player.hand.size == 0 -> spreadFactor.snapTo(0f)
+            player.hand.size > prev -> {
+                spreadFactor.snapTo(0f)
+                spreadFactor.animateTo(1f, tween(460, easing = FastOutSlowInEasing))
+            }
+        }
+    }
+    val spread = spreadFactor.value
+    val cardWidth  = LocalCardWidth.current
+    val cardHeight = LocalCardHeight.current
+
+    Column(
+        modifier = modifier
+            .fillMaxHeight()
+            .padding(horizontal = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+    ) {
+        val faceDownCards = minOf(player.hand.size, 8)
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(cardHeight),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(cardWidth, cardHeight)
+                    .onGloballyPositioned { coords ->
+                        registry.register(PositionKey.PlayerArea(player.id), coords)
+                    }
+            )
+            if (faceDownCards > 0) {
+                val centerIdx = (faceDownCards - 1) / 2f
+                repeat(faceDownCards) { idx ->
+                    val cardOffset = idx - centerIdx
+                    CardView(
+                        card = Card.SuitedCard(Suit.SPADES, Rank.ACE),
+                        faceDown = true,
+                        modifier = Modifier
+                            .offset(x = (cardOffset * 14 * spread).dp)
+                            .zIndex(idx.toFloat())
+                            .graphicsLayer {
+                                rotationZ = 180f - cardOffset * 4f * spread
+                                transformOrigin = TransformOrigin(0.5f, 0.5f)
+                            }
+                    )
+                }
+            }
+
+            AiBadge(
+                count = player.hand.size,
+                modifier = Modifier.align(Alignment.BottomCenter).zIndex(10f)
+            )
+        }
+        if (bubbleText != null) {
+            PassBubble(text = bubbleText)
+        } else if (roleLabel != null) {
+            Text(
+                text = roleLabel,
+                color = roleLabelColor,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp
+            )
+        }
+    }
+}
+
 // Vertical AI area for the left-side player in 4-player mode.
 @Composable
 fun AiSideArea(
