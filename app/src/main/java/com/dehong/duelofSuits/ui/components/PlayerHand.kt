@@ -115,7 +115,7 @@ fun PlayerHand(
     ) {
         val availableWidthPx = constraints.maxWidth.toFloat()
         val cardWidthPx = with(density) { cardWidth.toPx() }
-        val desiredStepPx = with(density) { 38.dp.toPx() }
+        val desiredStepPx = cardWidthPx * 3f / 4f
         val step = if (n <= 1) 0f else minOf(desiredStepPx, (availableWidthPx - cardWidthPx) / (n - 1))
         val totalWidthPx = if (n <= 1) cardWidthPx else cardWidthPx + (n - 1) * step
         val startX = (availableWidthPx - totalWidthPx) / 2f
