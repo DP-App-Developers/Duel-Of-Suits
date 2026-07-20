@@ -53,8 +53,8 @@ private const val ASPECT_RATIO      = 78f / 54f   // cardHeight / cardWidth
 
 // Minimum column count; actual count grows to fill available width at hand-card size.
 internal const val MIN_COLS = 4
-private val COL_GAP = 12.dp
-private val ROW_GAP = 8.dp
+private val COL_GAP = 18.dp
+private val ROW_GAP = 14.dp
 
 @Composable
 fun GameTable(
