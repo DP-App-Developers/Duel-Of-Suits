@@ -400,22 +400,20 @@ fun AiSideArea(
                     )
                 }
             }
+            AiBadge(
+                count = player.hand.size,
+                modifier = Modifier.align(Alignment.CenterEnd).zIndex(10f)
+            )
         }
 
-        Column(
-            modifier = Modifier.align(Alignment.CenterEnd),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            AiBadge(count = player.hand.size)
-            if (bubbleText != null) {
-                PassBubble(text = bubbleText)
-            } else if (roleLabel != null) {
-                RolePill(
-                    text = roleLabel,
-                    color = roleLabelColor,
-                    modifier = Modifier.rotate(90f)
-                )
-            }
+        if (bubbleText != null) {
+            PassBubble(text = bubbleText, modifier = Modifier.align(Alignment.CenterEnd))
+        } else if (roleLabel != null) {
+            RolePill(
+                text = roleLabel,
+                color = roleLabelColor,
+                modifier = Modifier.align(Alignment.CenterEnd).rotate(90f)
+            )
         }
     }
 }
