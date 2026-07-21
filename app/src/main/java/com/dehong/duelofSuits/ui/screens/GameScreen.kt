@@ -150,6 +150,7 @@ fun GameScreen(
     val cardHeight = cardWidth * (CARD_HEIGHT.value / CARD_WIDTH.value)
     val density = LocalDensity.current
 
+    val bubbleIllStart = stringResource(R.string.bubble_ill_start)
     val bubblePass = stringResource(R.string.bubble_pass)
     val bubbleTake = stringResource(R.string.bubble_take)
     val bubbleJokerOnly = stringResource(R.string.bubble_joker_only)
@@ -162,6 +163,13 @@ fun GameScreen(
                 scope.launch {
                     delay(event.delayMs)
                     displayedDrawPileCount--
+                }
+            }
+            if (event is AnimationEvent.GameStarting) {
+                playerBubbles[event.attackerIdx] = bubbleIllStart
+                scope.launch {
+                    delay(1500L)
+                    playerBubbles.remove(event.attackerIdx)
                 }
             }
             if (event is AnimationEvent.PlayerPassed) {
@@ -625,6 +633,7 @@ private fun handleAnimationEvent(
             }
         }
 
+        is AnimationEvent.GameStarting -> { /* handled in LaunchedEffect collector */ }
         is AnimationEvent.PlayerPassed -> { /* handled in LaunchedEffect collector */ }
         is AnimationEvent.PlayerTookCards -> { /* handled in LaunchedEffect collector */ }
         is AnimationEvent.JokerOnly -> { /* handled in LaunchedEffect collector */ }

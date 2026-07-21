@@ -154,6 +154,12 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
                 trumpCard = trumpCard
             )
 
+            // Wait for the hand fan-out animation (460ms) to finish before announcing
+            delay(550L)
+            _animationEvents.emit(AnimationEvent.GameStarting(attackerIdx))
+            // AI has an 800ms think delay, so starting 200ms after the bubble means
+            // cards land ~1 second after the bubble appears
+            delay(200L)
             checkAndRunAiTurn()
         }
     }

@@ -28,6 +28,7 @@
     <string name="action_take_cards">TAKE CARDS</string>
 
     <!-- Speech Bubbles -->
+    <string name="bubble_ill_start">I\'ll start</string>
     <string name="bubble_pass">PASS</string>
     <string name="bubble_take">TAKE</string>
     <string name="bubble_joker_only">Drawing random 3 cards, I only have Joker!</string>
