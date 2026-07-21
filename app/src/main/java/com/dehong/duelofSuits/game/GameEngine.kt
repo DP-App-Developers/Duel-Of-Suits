@@ -142,8 +142,7 @@ object GameEngine {
         val updatedPlayers = state.players.toMutableList()
         val defender = updatedPlayers[defenderIdx]
         updatedPlayers[defenderIdx] = defender.copy(
-            hand = defender.hand + allTableCards,
-            skipNextAttack = true
+            hand = defender.hand + allTableCards
         )
         val candidateNextAttacker = (state.defenderIndex + 1) % state.playerCount
         val (nextAttackerIdx, nextDefenderIdx) = resolveNextRoles(updatedPlayers, candidateNextAttacker, state.playerCount)
@@ -188,15 +187,8 @@ object GameEngine {
     }
 
     private fun resolveNextRoles(players: MutableList<Player>, candidateAttackerIdx: Int, playerCount: Int): Pair<Int, Int> {
-        var attackerIdx = candidateAttackerIdx
-        var checked = 0
-        while (players[attackerIdx].skipNextAttack && checked < playerCount) {
-            players[attackerIdx] = players[attackerIdx].copy(skipNextAttack = false)
-            attackerIdx = (attackerIdx + 1) % playerCount
-            checked++
-        }
-        val defenderIdx = (attackerIdx + 1) % playerCount
-        return Pair(attackerIdx, defenderIdx)
+        val defenderIdx = (candidateAttackerIdx + 1) % playerCount
+        return Pair(candidateAttackerIdx, defenderIdx)
     }
 
     fun applyJokerOnlyRule(state: GameState): GameState {
