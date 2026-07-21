@@ -85,7 +85,7 @@ fun GameInfoOverlay(
                 )
             }
 
-            state.phase == GamePhase.DEFENSE_PHASE && state.isHumanDefender -> {
+            state.phase == GamePhase.DEFENSE_PHASE && state.isHumanDefender && !state.allSlotsDefended -> {
                 ActionButton(
                     label = "TAKE CARDS",
                     enabled = notBusy,
