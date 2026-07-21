@@ -1,8 +1,13 @@
 package com.dehong.duelofSuits.ui.components
 
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +43,7 @@ import com.dehong.duelofSuits.ui.animation.LocalFlyingCards
 import com.dehong.duelofSuits.ui.animation.PositionKey
 import com.dehong.duelofSuits.ui.animation.PositionRegistry
 import com.dehong.duelofSuits.ui.theme.HighlightCyan
+import com.dehong.duelofSuits.ui.theme.HighlightCyanOverlay
 
 // Each slot = attack card + defense-card offset stacked diagonally.
 // slotWidth  = cardWidth  * (54 + 20) / 54 = cardWidth  * 74/54
@@ -189,6 +195,17 @@ private fun TableSlotView(
             GameEngine.canDefend(slot.attackCard, selectedHandCard, state.trumpSuit)
     val flyingCards = LocalFlyingCards.current
 
+    val infiniteTransition = rememberInfiniteTransition(label = "defenseSlot")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
+
     CompositionLocalProvider(
         LocalCardWidth  provides cardWidth,
         LocalCardHeight provides cardHeight
@@ -222,7 +239,7 @@ private fun TableSlotView(
                 }
             } else {
                 val slotBorderColor = when {
-                    canDefendThisSlot -> HighlightCyan
+                    canDefendThisSlot -> HighlightCyan.copy(alpha = pulseAlpha)
                     isHumanDefender   -> Color.White.copy(alpha = 0.25f)
                     else              -> Color.White.copy(alpha = 0.15f)
                 }
@@ -231,6 +248,10 @@ private fun TableSlotView(
                         .align(Alignment.TopStart)
                         .offset(x = defenseX, y = defenseY)
                         .requiredSize(cardWidth, cardHeight)
+                        .background(
+                            color = if (canDefendThisSlot) HighlightCyanOverlay else Color.Transparent,
+                            shape = RoundedCornerShape(6.dp)
+                        )
                         .border(
                             width = if (canDefendThisSlot) 2.dp else 1.dp,
                             color = slotBorderColor,
@@ -245,11 +266,11 @@ private fun TableSlotView(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isHumanDefender) {
+                    if (canDefendThisSlot) {
                         Text(
-                            text = if (canDefendThisSlot) "▸" else "?",
-                            color = slotBorderColor,
-                            fontSize = 16.sp,
+                            text = "↓",
+                            color = HighlightCyan.copy(alpha = pulseAlpha),
+                            fontSize = 22.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
