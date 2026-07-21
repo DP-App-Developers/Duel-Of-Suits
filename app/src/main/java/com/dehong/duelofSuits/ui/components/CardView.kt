@@ -260,9 +260,18 @@ private fun CardFrontJoker(card: Card.Joker, alpha: Float) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(listOf(Color(0xFFFFF8E1), Color(0xFFFFF0C0)))
-            ),
+            .background(CardFace)
+            .drawWithContent {
+                drawContent()
+                val inset = 2.5f.dp.toPx()
+                drawRoundRect(
+                    color = Color.Black.copy(alpha = 0.07f),
+                    topLeft = Offset(inset, inset),
+                    size = Size(size.width - inset * 2, size.height - inset * 2),
+                    cornerRadius = CornerRadius(5.dp.toPx()),
+                    style = Stroke(width = 0.8.dp.toPx())
+                )
+            },
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
