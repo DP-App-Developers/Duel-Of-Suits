@@ -242,7 +242,7 @@ private fun GameLayout(
         // TOP: fixed height fits portrait card + badge label below
         Row(
             modifier = Modifier.fillMaxWidth().height(cardHeight + 24.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+            horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.Top
         ) {
             when (state.playerCount) {
@@ -254,36 +254,40 @@ private fun GameLayout(
                     modifier = Modifier.fillMaxWidth().fillMaxHeight()
                 )
                 3 -> {
+                    Spacer(modifier = Modifier.weight(1f))
                     AiTopArea(
                         player = state.players[1],
                         state = state,
                         registry = registry,
                         showUI = uiReady,
-                        modifier = Modifier.weight(0.5f).fillMaxHeight()
+                        modifier = Modifier.weight(2f).fillMaxHeight()
                     )
                     AiTopArea(
                         player = state.players[2],
                         state = state,
                         registry = registry,
                         showUI = uiReady,
-                        modifier = Modifier.weight(0.5f).fillMaxHeight()
+                        modifier = Modifier.weight(2f).fillMaxHeight()
                     )
+                    Spacer(modifier = Modifier.weight(1f))
                 }
                 else -> {
+                    Spacer(modifier = Modifier.weight(1f))
                     AiTopArea(
                         player = state.players[2],
                         state = state,
                         registry = registry,
                         showUI = uiReady,
-                        modifier = Modifier.weight(0.5f).fillMaxHeight()
+                        modifier = Modifier.weight(2f).fillMaxHeight()
                     )
                     AiTopArea(
                         player = state.players[3],
                         state = state,
                         registry = registry,
                         showUI = uiReady,
-                        modifier = Modifier.weight(0.5f).fillMaxHeight()
+                        modifier = Modifier.weight(2f).fillMaxHeight()
                     )
+                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }
