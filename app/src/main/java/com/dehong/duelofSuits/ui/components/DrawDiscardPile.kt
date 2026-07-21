@@ -1,7 +1,5 @@
 package com.dehong.duelofSuits.ui.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -95,66 +93,77 @@ fun DrawPile(
                         registry.register(PositionKey.DrawPile, coords)
                     })
                 }
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .offset { IntOffset(-6, -6) }
-                        .shadow(
-                            elevation = 12.dp,
-                            shape = CircleShape,
-                            ambientColor = Gold.copy(alpha = 0.55f),
-                            spotColor = Gold.copy(alpha = 0.80f)
-                        )
-                        .size(34.dp)
-                        .drawWithContent {
-                            val cx = size.width / 2f
-                            val cy = size.height / 2f
-                            val outerR = size.minDimension / 2f
-                            val innerR = outerR - 3.2f.dp.toPx()
-                            drawCircle(
-                                brush = Brush.sweepGradient(
-                                    colors = listOf(
-                                        Color(0xFFFFE566), Color(0xFFB8860B),
-                                        Color(0xFFFFD700), Color(0xFFE8C000),
-                                        Color(0xFF9A6E00), Color(0xFFFFE566)
-                                    ),
-                                    center = Offset(cx, cy)
-                                ),
-                                radius = outerR
-                            )
-                            drawCircle(
-                                brush = Brush.radialGradient(
-                                    colors = listOf(Color(0xFF1C2E58), Color(0xFF060C1A)),
-                                    center = Offset(cx, cy),
-                                    radius = innerR
-                                ),
-                                radius = innerR
-                            )
-                            drawCircle(
-                                brush = Brush.radialGradient(
-                                    colors = listOf(
-                                        Color.White.copy(alpha = 0.22f),
-                                        Color.Transparent
-                                    ),
-                                    center = Offset(cx * 0.58f, cy * 0.52f),
-                                    radius = innerR * 0.62f
-                                ),
-                                radius = innerR
-                            )
-                            drawContent()
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "$count",
-                        color = Color(0xFFFFF4CC),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = (-0.5).sp
-                    )
-                }
             }
         }
+    }
+}
+
+@Composable
+fun DrawPileBadgeOverlay(
+    count: Int,
+    registry: PositionRegistry,
+    modifier: Modifier = Modifier
+) {
+    val pileOffset = registry.getOffset(PositionKey.DrawPile)
+    if (pileOffset == Offset.Zero) return
+    val x = pileOffset.x.toInt() - 6
+    val y = pileOffset.y.toInt() - 6
+    Box(
+        modifier = modifier
+            .offset { IntOffset(x, y) }
+            .shadow(
+                elevation = 12.dp,
+                shape = CircleShape,
+                ambientColor = Gold.copy(alpha = 0.55f),
+                spotColor = Gold.copy(alpha = 0.80f)
+            )
+            .size(34.dp)
+            .drawWithContent {
+                val cx = size.width / 2f
+                val cy = size.height / 2f
+                val outerR = size.minDimension / 2f
+                val innerR = outerR - 3.2f.dp.toPx()
+                drawCircle(
+                    brush = Brush.sweepGradient(
+                        colors = listOf(
+                            Color(0xFFFFE566), Color(0xFFB8860B),
+                            Color(0xFFFFD700), Color(0xFFE8C000),
+                            Color(0xFF9A6E00), Color(0xFFFFE566)
+                        ),
+                        center = Offset(cx, cy)
+                    ),
+                    radius = outerR
+                )
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color(0xFF1C2E58), Color(0xFF060C1A)),
+                        center = Offset(cx, cy),
+                        radius = innerR
+                    ),
+                    radius = innerR
+                )
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.22f),
+                            Color.Transparent
+                        ),
+                        center = Offset(cx * 0.58f, cy * 0.52f),
+                        radius = innerR * 0.62f
+                    ),
+                    radius = innerR
+                )
+                drawContent()
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "$count",
+            color = Color(0xFFFFF4CC),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = (-0.5).sp
+        )
     }
 }
 

@@ -83,6 +83,7 @@ import com.dehong.duelofSuits.ui.components.LocalCardHeight
 import com.dehong.duelofSuits.ui.components.LocalCardWidth
 import com.dehong.duelofSuits.ui.components.CardView
 import com.dehong.duelofSuits.ui.components.DrawPile
+import com.dehong.duelofSuits.ui.components.DrawPileBadgeOverlay
 import com.dehong.duelofSuits.ui.components.GameInfoOverlay
 import com.dehong.duelofSuits.ui.components.GameTable
 import com.dehong.duelofSuits.ui.components.PlayerHand
@@ -113,6 +114,11 @@ fun GameScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var uiReady by remember { mutableStateOf(false) }
+    var displayedDrawPileCount by remember { mutableStateOf(state.drawPileCount) }
+
+    LaunchedEffect(state.drawPileCount) {
+        displayedDrawPileCount = state.drawPileCount
+    }
 
     LaunchedEffect(state.phase) {
         if (state.phase == GamePhase.DEALING) {
@@ -146,6 +152,12 @@ fun GameScreen(
         viewModel.animationEvents.collect { event ->
             handleAnimationEvent(event, registry, flyingCards, scope, density, cardWidth, playerCount,
                 viewModel.boardNumCols.value)
+            if (event is AnimationEvent.DealCard) {
+                scope.launch {
+                    delay(event.delayMs)
+                    displayedDrawPileCount--
+                }
+            }
             if (event is AnimationEvent.PlayerPassed) {
                 playerBubbles[event.playerIdx] = "PASS"
                 scope.launch {
@@ -213,6 +225,11 @@ fun GameScreen(
             }
 
             FlyingCardLayer(flyingCards = flyingCards)
+            DrawPileBadgeOverlay(
+                count = displayedDrawPileCount,
+                registry = registry,
+                modifier = Modifier.zIndex(15f)
+            )
             SpeechBubbleLayer(state = state, registry = registry, playerBubbles = playerBubbles)
 
             SnackbarHost(
