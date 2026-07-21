@@ -253,7 +253,9 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
                     _gameState.value = state.copy(players = newState.players, selectedCards = emptySet(), animating = true)
                     emitPlayCardAnimations(selected, 0, state.tableSlots.size)
                     delay(500L)
-                    _gameState.value = newState.copy(animating = false, reservedSlotCount = 0)
+                    val finalState = newState.copy(animating = false, reservedSlotCount = 0)
+                    if (checkAndApplyImmediateWin(finalState)) return@launch
+                    _gameState.value = finalState
                     checkAndRunAiTurn()
                 }
             }
@@ -266,7 +268,9 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
                     _gameState.value = state.copy(players = newState.players, selectedCards = emptySet(), animating = true)
                     emitPlayCardAnimations(selected, 0, state.tableSlots.size)
                     delay(500L)
-                    _gameState.value = newState.copy(animating = false, reservedSlotCount = 0)
+                    val finalState = newState.copy(animating = false, reservedSlotCount = 0)
+                    if (checkAndApplyImmediateWin(finalState)) return@launch
+                    _gameState.value = finalState
                     checkAndRunAiTurn()
                 }
             }
@@ -288,11 +292,22 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
     private fun autoAdvanceDefense() {
         viewModelScope.launch {
             delay(500L)
-            _gameState.value = _gameState.value.copy(
-                phase = GamePhase.THROW_IN_PHASE,
-                throwInPassedIndices = emptySet(),
-                message = "Defended! Throw in more cards or pass"
-            )
+            val state = _gameState.value
+            if (checkAndApplyImmediateWin(state)) return@launch
+            val nextPhaseState = if (state.defender.hand.isEmpty()) {
+                state.copy(
+                    phase = GamePhase.REPLENISH_PHASE,
+                    throwInPassedIndices = emptySet(),
+                    message = "Defense successful!"
+                )
+            } else {
+                state.copy(
+                    phase = GamePhase.THROW_IN_PHASE,
+                    throwInPassedIndices = emptySet(),
+                    message = "Defended! Throw in more cards or pass"
+                )
+            }
+            _gameState.value = nextPhaseState
             checkAndRunAiTurn()
         }
     }
@@ -307,6 +322,16 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
 
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    private fun checkAndApplyImmediateWin(state: GameState): Boolean {
+        val winner = GameEngine.checkWinner(state) ?: return false
+        _gameState.value = state.copy(
+            phase = GamePhase.GAME_OVER,
+            winnerId = winner,
+            message = "${state.players.first { it.id == winner }.name} wins!"
+        )
+        return true
     }
 
     // ── AI Turn Logic ───────────────────────────────────────────────────────
@@ -398,7 +423,9 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
         _gameState.value = currentState.copy(players = newState.players, selectedCards = emptySet(), animating = true)
         emitPlayCardAnimations(cards, attackerIdx, currentState.tableSlots.size)
         delay(500L)
-        _gameState.value = newState.copy(animating = false, reservedSlotCount = 0)
+        val finalState = newState.copy(animating = false, reservedSlotCount = 0)
+        if (checkAndApplyImmediateWin(finalState)) return
+        _gameState.value = finalState
 
         delay(600L)
         checkAndRunAiTurn()
@@ -435,7 +462,9 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             _gameState.value = currentState.copy(players = newState.players, selectedCards = emptySet(), animating = true)
             emitPlayCardAnimations(cards, playerIdx, currentState.tableSlots.size)
             delay(500L)
-            _gameState.value = newState.copy(animating = false, reservedSlotCount = 0)
+            val finalState = newState.copy(animating = false, reservedSlotCount = 0)
+            if (checkAndApplyImmediateWin(finalState)) return
+            _gameState.value = finalState
             delay(300L)
         }
 
@@ -463,14 +492,24 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             delay(350L)
             currentState = GameEngine.processDefenseCard(attackCard, defenseCard, defenderIdx, currentState)
             _gameState.value = currentState
+            if (checkAndApplyImmediateWin(currentState)) return
         }
 
         delay(500L)
-        _gameState.value = currentState.copy(
-            phase = GamePhase.THROW_IN_PHASE,
-            throwInPassedIndices = emptySet(),
-            message = "Defended! Throw in more cards or pass"
-        )
+        val nextPhaseState = if (currentState.defender.hand.isEmpty()) {
+            currentState.copy(
+                phase = GamePhase.REPLENISH_PHASE,
+                throwInPassedIndices = emptySet(),
+                message = "Defense successful!"
+            )
+        } else {
+            currentState.copy(
+                phase = GamePhase.THROW_IN_PHASE,
+                throwInPassedIndices = emptySet(),
+                message = "Defended! Throw in more cards or pass"
+            )
+        }
+        _gameState.value = nextPhaseState
         checkAndRunAiTurn()
     }
 
