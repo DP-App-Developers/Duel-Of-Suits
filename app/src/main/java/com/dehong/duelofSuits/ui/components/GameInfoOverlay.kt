@@ -31,9 +31,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.dehong.duelofSuits.R
 import com.dehong.duelofSuits.model.GamePhase
 import com.dehong.duelofSuits.model.GameState
 import com.dehong.duelofSuits.ui.animation.LocalTableResizing
@@ -60,7 +62,7 @@ fun GameInfoOverlay(
         when {
             state.phase == GamePhase.ATTACK_PHASE && state.isHumanAttacker -> {
                 ActionButton(
-                    label = "ATTACK",
+                    label = stringResource(R.string.action_attack),
                     enabled = state.selectedCards.isNotEmpty() && notBusy,
                     topColor = Color(0xFFFFB300),
                     bottomColor = Color(0xFFE65100),
@@ -71,7 +73,7 @@ fun GameInfoOverlay(
 
             state.phase == GamePhase.THROW_IN_PHASE && state.isHumanTurn -> {
                 ActionButton(
-                    label = "THROW IN",
+                    label = stringResource(R.string.action_throw_in),
                     enabled = state.selectedCards.isNotEmpty() && notBusy,
                     topColor = Color(0xFF42A5F5),
                     bottomColor = Color(0xFF1565C0),
@@ -79,7 +81,7 @@ fun GameInfoOverlay(
                     onClick = onPlaySelected
                 )
                 GhostButton(
-                    label = "PASS",
+                    label = stringResource(R.string.action_pass),
                     enabled = notBusy,
                     onClick = onPass
                 )
@@ -87,7 +89,7 @@ fun GameInfoOverlay(
 
             state.phase == GamePhase.DEFENSE_PHASE && state.isHumanDefender && !state.allSlotsDefended -> {
                 ActionButton(
-                    label = "TAKE CARDS",
+                    label = stringResource(R.string.action_take_cards),
                     enabled = notBusy,
                     topColor = Color(0xFFEF5350),
                     bottomColor = Color(0xFF880E4F),

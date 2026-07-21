@@ -39,10 +39,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.dehong.duelofSuits.R
 import com.dehong.duelofSuits.model.Card
 import com.dehong.duelofSuits.model.GameState
 import com.dehong.duelofSuits.model.Player
@@ -261,8 +263,8 @@ fun AiPlayerArea(
     val isDefender = state.defenderIndex == player.id
     val isAttacker = state.attackerIndex == player.id
     val roleLabel = when {
-        isAttacker -> "Attacker"
-        isDefender -> "Defender"
+        isAttacker -> stringResource(R.string.role_attacker)
+        isDefender -> stringResource(R.string.role_defender)
         else -> null
     }
     val roleLabelColor = if (isAttacker) Color(0xFFFF8F00) else Color(0xFFB71C1C)
@@ -354,8 +356,8 @@ fun AiTopArea(
     val isDefender = state.defenderIndex == player.id
     val isAttacker = state.attackerIndex == player.id
     val roleLabel = when {
-        isAttacker -> "Attacker"
-        isDefender -> "Defender"
+        isAttacker -> stringResource(R.string.role_attacker)
+        isDefender -> stringResource(R.string.role_defender)
         else -> null
     }
     val roleLabelColor = if (isAttacker) Color(0xFFFF8F00) else Color(0xFFB71C1C)
@@ -447,8 +449,8 @@ fun AiSideArea(
     val isDefender = state.defenderIndex == player.id
     val isAttacker = state.attackerIndex == player.id
     val roleLabel = when {
-        isAttacker -> "Attacker"
-        isDefender -> "Defender"
+        isAttacker -> stringResource(R.string.role_attacker)
+        isDefender -> stringResource(R.string.role_defender)
         else -> null
     }
     val roleLabelColor = if (isAttacker) Color(0xFFFF8F00) else Color(0xFFB71C1C)

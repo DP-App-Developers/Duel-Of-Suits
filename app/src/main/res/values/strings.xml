@@ -1,4 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Duel of Suits</string>
+
+    <!-- Home Screen -->
+    <string name="home_title">DUEL OF SUITS</string>
+    <string name="home_ornament_diamond">♦</string>
+    <string name="home_subtitle">A GAME OF ATTACK AND DEFENSE</string>
+    <string name="home_choose_players">Choose number of players</string>
+    <string name="home_player_singular">Player</string>
+    <string name="home_player_plural">Players</string>
+    <string name="home_vs_one_ai">vs 1 AI</string>
+    <string name="home_vs_two_ai">vs 2 AI</string>
+    <string name="home_vs_three_ai">vs 3 AI</string>
+
+    <!-- Game Over Overlay -->
+    <string name="game_over_victory">VICTORY</string>
+    <string name="game_over_defeated">DEFEATED</string>
+    <string name="game_over_wins_round">wins the round</string>
+    <string name="game_over_play_again">PLAY AGAIN</string>
+    <string name="game_over_home">HOME</string>
+    <string name="game_over_winner_fallback">Someone</string>
+
+    <!-- Action Buttons -->
+    <string name="action_attack">ATTACK</string>
+    <string name="action_throw_in">THROW IN</string>
+    <string name="action_pass">PASS</string>
+    <string name="action_take_cards">TAKE CARDS</string>
+
+    <!-- Speech Bubbles -->
+    <string name="bubble_pass">PASS</string>
+    <string name="bubble_take">TAKE</string>
+    <string name="bubble_joker_only">Drawing random 3 cards, I only have Joker!</string>
+
+    <!-- Role Labels (title case; RolePill applies uppercase() itself) -->
+    <string name="role_attacker">Attacker</string>
+    <string name="role_defender">Defender</string>
+
+    <!-- Card Labels -->
+    <string name="card_joker_emoji">🃏</string>
+    <string name="card_joker">JOKER</string>
+
+    <!-- Player Names -->
+    <string name="player_name_human">You</string>
+    <string name="player_name_ai_1">Alex</string>
+    <string name="player_name_ai_2">Sam</string>
+    <string name="player_name_ai_3">Ryan</string>
+
+    <!-- Error / Validation Messages (shown in Snackbar) -->
+    <string name="error_select_to_attack">Select cards to attack</string>
+    <string name="error_joker_cannot_attack">Jokers cannot be used to attack</string>
+    <string name="error_same_rank_required">All attack cards must be the same rank</string>
+    <string name="error_max_four_cards">Can play at most 4 cards</string>
+    <string name="error_too_many_attack_cards">Too many attack cards (defender has %1$d cards)</string>
+    <string name="error_select_to_throw_in">Select cards to throw in</string>
+    <string name="error_joker_cannot_throw_in">Jokers cannot be thrown in</string>
+    <string name="error_thrown_must_match_rank">Thrown cards must match a rank on the table</string>
+    <string name="error_too_many_throw_in_cards">Too many cards (defender had %1$d cards at start of turn)</string>
+    <string name="error_card_must_match_table_rank">Card must match a rank already on the table</string>
+    <string name="error_card_cannot_defend_any">This card cannot defend any attack card</string>
+    <string name="error_card_cannot_defend_that">This card cannot defend that attack</string>
 </resources>

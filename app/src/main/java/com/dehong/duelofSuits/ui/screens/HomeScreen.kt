@@ -20,9 +20,11 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.dehong.duelofSuits.R
 import com.dehong.duelofSuits.ui.theme.Gold
 import com.dehong.duelofSuits.ui.theme.TableGreen
 import com.dehong.duelofSuits.ui.theme.TableGreenLight
@@ -58,7 +60,7 @@ fun HomeScreen(onStartGame: (Int) -> Unit) {
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             Text(
-                text = "DUEL OF SUITS",
+                text = stringResource(R.string.home_title),
                 color = Gold,
                 fontSize = 36.sp,
                 fontWeight = FontWeight.ExtraBold,
@@ -72,13 +74,13 @@ fun HomeScreen(onStartGame: (Int) -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Box(Modifier.width(60.dp).height(1.dp).background(Gold.copy(alpha = 0.45f)))
-                Text("♦", color = Gold.copy(alpha = 0.7f), fontSize = 13.sp)
+                Text(stringResource(R.string.home_ornament_diamond), color = Gold.copy(alpha = 0.7f), fontSize = 13.sp)
                 Box(Modifier.width(60.dp).height(1.dp).background(Gold.copy(alpha = 0.45f)))
             }
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "A GAME OF ATTACK AND DEFENSE",
+                text = stringResource(R.string.home_subtitle),
                 color = TextOnDark.copy(alpha = 0.45f),
                 fontSize = 10.sp,
                 letterSpacing = 2.sp
@@ -87,7 +89,7 @@ fun HomeScreen(onStartGame: (Int) -> Unit) {
             Spacer(modifier = Modifier.height(52.dp))
 
             Text(
-                text = "Choose number of players",
+                text = stringResource(R.string.home_choose_players),
                 color = TextOnDark.copy(alpha = 0.65f),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
@@ -145,7 +147,7 @@ private fun PlayerCountButton(count: Int, onStartGame: (Int) -> Unit) {
             Box(Modifier.width(36.dp).height(1.dp).background(Gold.copy(alpha = 0.35f)))
             Spacer(Modifier.height(6.dp))
             Text(
-                text = if (count == 1) "Player" else "Players",
+                text = if (count == 1) stringResource(R.string.home_player_singular) else stringResource(R.string.home_player_plural),
                 color = TextOnDark.copy(alpha = 0.8f),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
@@ -154,9 +156,9 @@ private fun PlayerCountButton(count: Int, onStartGame: (Int) -> Unit) {
             Spacer(Modifier.height(2.dp))
             Text(
                 text = when (count) {
-                    2 -> "vs 1 AI"
-                    3 -> "vs 2 AI"
-                    else -> "vs 3 AI"
+                    2 -> stringResource(R.string.home_vs_one_ai)
+                    3 -> stringResource(R.string.home_vs_two_ai)
+                    else -> stringResource(R.string.home_vs_three_ai)
                 },
                 color = Gold.copy(alpha = 0.55f),
                 fontSize = 10.sp,

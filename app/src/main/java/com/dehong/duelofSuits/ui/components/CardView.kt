@@ -28,11 +28,13 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.dehong.duelofSuits.R
 import com.dehong.duelofSuits.model.Card
 import com.dehong.duelofSuits.model.CardSelectionState
 import com.dehong.duelofSuits.model.Rank
@@ -275,9 +277,9 @@ private fun CardFrontJoker(card: Card.Joker, alpha: Float) {
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("🃏", fontSize = 22.sp)
+            Text(stringResource(R.string.card_joker_emoji), fontSize = 22.sp)
             Text(
-                text = "JOKER",
+                text = stringResource(R.string.card_joker),
                 color = Color(0xFF4A148C).copy(alpha = alpha),
                 fontSize = 8.sp,
                 fontWeight = FontWeight.ExtraBold,

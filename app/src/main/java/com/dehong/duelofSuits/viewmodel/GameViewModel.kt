@@ -1,10 +1,15 @@
 package com.dehong.duelofSuits.viewmodel
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.dehong.duelofSuits.R
 import com.dehong.duelofSuits.game.AiPlayer
+import com.dehong.duelofSuits.game.AttackError
 import com.dehong.duelofSuits.game.GameEngine
+import com.dehong.duelofSuits.game.ThrowInError
 import com.dehong.duelofSuits.model.Card
 import com.dehong.duelofSuits.model.CardSelectionState
 import com.dehong.duelofSuits.model.Deck
@@ -22,13 +27,19 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-private val PLAYER_NAMES = listOf("You", "Alex", "Sam", "Ryan")
-
 // Time to wait after reserving slots before emitting fly animations, so the board
 // resize animation (tween 350ms) finishes before cards start moving.
 private const val RESIZE_ANIM_WAIT_MS = 400L
 
-class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
+class GameViewModel(application: Application, private val playerCount: Int = 3) : AndroidViewModel(application) {
+
+    // Must be initialized before _gameState, which calls createInitialState() → playerNames.
+    private val playerNames: List<String> = listOf(
+        application.getString(R.string.player_name_human),
+        application.getString(R.string.player_name_ai_1),
+        application.getString(R.string.player_name_ai_2),
+        application.getString(R.string.player_name_ai_3)
+    )
 
     private val _gameState = MutableStateFlow(createInitialState())
     val gameState: StateFlow<GameState> = _gameState.asStateFlow()
@@ -51,9 +62,27 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
         startGame()
     }
 
+    private fun getString(resId: Int): String = getApplication<Application>().getString(resId)
+    private fun getString(resId: Int, vararg args: Any): String = getApplication<Application>().getString(resId, *args)
+
+    private fun AttackError.toMessage(): String = when (this) {
+        AttackError.EmptySelection -> getString(R.string.error_select_to_attack)
+        AttackError.JokerForbidden -> getString(R.string.error_joker_cannot_attack)
+        AttackError.MixedRanks -> getString(R.string.error_same_rank_required)
+        AttackError.TooManyCards -> getString(R.string.error_max_four_cards)
+        is AttackError.ExceedsDefenderHand -> getString(R.string.error_too_many_attack_cards, defenderHandSize)
+    }
+
+    private fun ThrowInError.toMessage(): String = when (this) {
+        ThrowInError.EmptySelection -> getString(R.string.error_select_to_throw_in)
+        ThrowInError.JokerForbidden -> getString(R.string.error_joker_cannot_throw_in)
+        ThrowInError.RankMismatch -> getString(R.string.error_thrown_must_match_rank)
+        is ThrowInError.ExceedsLimit -> getString(R.string.error_too_many_throw_in_cards, startCount)
+    }
+
     private fun createInitialState(): GameState {
         val players = (0 until playerCount).map { i ->
-            Player(id = i, name = PLAYER_NAMES[i], isHuman = i == 0)
+            Player(id = i, name = playerNames[i], isHuman = i == 0)
         }
         return GameState(
             players = players,
@@ -66,7 +95,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             defenderIndex = 1,
             selectedCards = emptySet(),
             selectedHandCardForDefense = null,
-            message = "Dealing cards..."
+            message = ""
         )
     }
 
@@ -80,7 +109,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             val trumpSuit = (trumpCard as? Card.SuitedCard)?.suit ?: Suit.SPADES
 
             val players = (0 until playerCount).map { i ->
-                Player(id = i, name = PLAYER_NAMES[i], isHuman = i == 0, hand = hands[i])
+                Player(id = i, name = playerNames[i], isHuman = i == 0, hand = hands[i])
             }
 
             val attackerIdx = (0 until playerCount).random()
@@ -120,7 +149,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
                 defenderIndex = defenderIdx,
                 selectedCards = emptySet(),
                 selectedHandCardForDefense = null,
-                message = "${players[attackerIdx].name} attacks!",
+                message = "",
                 trumpSuit = trumpSuit,
                 trumpCard = trumpCard
             )
@@ -151,7 +180,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
 
     private fun handleCardSelectionForAttack(card: Card, state: GameState) {
         if (card is Card.Joker) {
-            _errorMessage.value = "Jokers cannot be used to attack"
+            _errorMessage.value = getString(R.string.error_joker_cannot_attack)
             return
         }
         val selected = state.selectedCards.toMutableSet()
@@ -170,13 +199,13 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
 
     private fun handleCardSelectionForThrowIn(card: Card, state: GameState) {
         if (card is Card.Joker) {
-            _errorMessage.value = "Jokers cannot be thrown in"
+            _errorMessage.value = getString(R.string.error_joker_cannot_throw_in)
             return
         }
         val rank = (card as? Card.SuitedCard)?.rank
         val tableRanks = GameEngine.getTableRanks(state)
         if (rank == null || rank !in tableRanks) {
-            _errorMessage.value = "Card must match a rank already on the table"
+            _errorMessage.value = getString(R.string.error_card_must_match_table_rank)
             return
         }
         val selected = state.selectedCards.toMutableSet()
@@ -193,7 +222,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             slot.defenseCard == null && GameEngine.canDefend(slot.attackCard, card, state.trumpSuit)
         }
         if (validSlots.isEmpty()) {
-            _errorMessage.value = "This card cannot defend any attack card"
+            _errorMessage.value = getString(R.string.error_card_cannot_defend_any)
             return
         }
         if (validSlots.size == 1) {
@@ -222,7 +251,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
         val slot = state.tableSlots.getOrNull(slotIndex) ?: return
         if (slot.defenseCard != null) return
         if (!GameEngine.canDefend(slot.attackCard, selectedCard, state.trumpSuit)) {
-            _errorMessage.value = "This card cannot defend that attack"
+            _errorMessage.value = getString(R.string.error_card_cannot_defend_that)
             return
         }
         val newState = GameEngine.processDefenseCard(slot.attackCard, selectedCard, 0, state)
@@ -247,7 +276,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             GamePhase.ATTACK_PHASE -> {
                 if (state.attackerIndex != 0) return
                 val error = GameEngine.validateAttack(selected, state)
-                if (error != null) { _errorMessage.value = error; return }
+                if (error != null) { _errorMessage.value = error.toMessage(); return }
                 viewModelScope.launch {
                     val newState = GameEngine.processAttack(selected, 0, state)
                     _gameState.value = state.copy(players = newState.players, selectedCards = emptySet(), animating = true)
@@ -262,7 +291,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             GamePhase.THROW_IN_PHASE -> {
                 if (state.defenderIndex == 0) return
                 val error = GameEngine.validateThrowIn(selected, state)
-                if (error != null) { _errorMessage.value = error; return }
+                if (error != null) { _errorMessage.value = error.toMessage(); return }
                 viewModelScope.launch {
                     val newState = GameEngine.processThrowIn(selected, 0, state)
                     _gameState.value = state.copy(players = newState.players, selectedCards = emptySet(), animating = true)
@@ -298,13 +327,13 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
                 state.copy(
                     phase = GamePhase.REPLENISH_PHASE,
                     throwInPassedIndices = emptySet(),
-                    message = "Defense successful!"
+                    message = ""
                 )
             } else {
                 state.copy(
                     phase = GamePhase.THROW_IN_PHASE,
                     throwInPassedIndices = emptySet(),
-                    message = "Defended! Throw in more cards or pass"
+                    message = ""
                 )
             }
             _gameState.value = nextPhaseState
@@ -329,7 +358,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
         _gameState.value = state.copy(
             phase = GamePhase.GAME_OVER,
             winnerId = winner,
-            message = "${state.players.first { it.id == winner }.name} wins!"
+            message = ""
         )
         return true
     }
@@ -500,13 +529,13 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             currentState.copy(
                 phase = GamePhase.REPLENISH_PHASE,
                 throwInPassedIndices = emptySet(),
-                message = "Defense successful!"
+                message = ""
             )
         } else {
             currentState.copy(
                 phase = GamePhase.THROW_IN_PHASE,
                 throwInPassedIndices = emptySet(),
-                message = "Defended! Throw in more cards or pass"
+                message = ""
             )
         }
         _gameState.value = nextPhaseState
@@ -525,7 +554,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             _gameState.value = replenishedState.copy(
                 phase = GamePhase.GAME_OVER,
                 winnerId = winner,
-                message = "${replenishedState.players.first { it.id == winner }.name} wins!"
+                message = ""
             )
             return
         }
@@ -568,7 +597,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
             _gameState.value = newState.copy(
                 phase = GamePhase.GAME_OVER,
                 winnerId = winner,
-                message = "${newState.players.first { it.id == winner }.name} wins!"
+                message = ""
             )
             return
         }
@@ -659,9 +688,9 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
     }
 }
 
-class GameViewModelFactory(private val playerCount: Int) : ViewModelProvider.Factory {
+class GameViewModelFactory(private val application: Application, private val playerCount: Int) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return GameViewModel(playerCount) as T
+        return GameViewModel(application, playerCount) as T
     }
 }

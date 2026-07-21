@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
                         playerCount = screen.playerCount,
                         onNavigateHome = { currentScreen = AppScreen.Home },
                         viewModel = viewModel(
-                            factory = GameViewModelFactory(screen.playerCount),
+                            factory = GameViewModelFactory(application, screen.playerCount),
                             key = "game_${screen.playerCount}_${screen.sessionId}"
                         )
                     )

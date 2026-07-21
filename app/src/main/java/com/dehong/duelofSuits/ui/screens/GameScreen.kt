@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntOffset
@@ -92,6 +93,7 @@ import com.dehong.duelofSuits.ui.theme.Gold
 import com.dehong.duelofSuits.ui.theme.TableGreen
 import com.dehong.duelofSuits.ui.theme.TableGreenLight
 import com.dehong.duelofSuits.ui.theme.TextOnDark
+import com.dehong.duelofSuits.R
 import com.dehong.duelofSuits.viewmodel.GameViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -148,6 +150,10 @@ fun GameScreen(
     val cardHeight = cardWidth * (CARD_HEIGHT.value / CARD_WIDTH.value)
     val density = LocalDensity.current
 
+    val bubblePass = stringResource(R.string.bubble_pass)
+    val bubbleTake = stringResource(R.string.bubble_take)
+    val bubbleJokerOnly = stringResource(R.string.bubble_joker_only)
+
     LaunchedEffect(Unit) {
         viewModel.animationEvents.collect { event ->
             handleAnimationEvent(event, registry, flyingCards, scope, density, cardWidth, playerCount,
@@ -159,21 +165,21 @@ fun GameScreen(
                 }
             }
             if (event is AnimationEvent.PlayerPassed) {
-                playerBubbles[event.playerIdx] = "PASS"
+                playerBubbles[event.playerIdx] = bubblePass
                 scope.launch {
                     delay(1200L)
                     playerBubbles.remove(event.playerIdx)
                 }
             }
             if (event is AnimationEvent.PlayerTookCards) {
-                playerBubbles[event.playerIdx] = "TAKE"
+                playerBubbles[event.playerIdx] = bubbleTake
                 scope.launch {
                     delay(1500L)
                     playerBubbles.remove(event.playerIdx)
                 }
             }
             if (event is AnimationEvent.JokerOnly) {
-                playerBubbles[event.playerIdx] = "Drawing random 3 cards, I only have Joker!"
+                playerBubbles[event.playerIdx] = bubbleJokerOnly
                 scope.launch {
                     delay(2500L)
                     playerBubbles.remove(event.playerIdx)
@@ -378,9 +384,9 @@ private fun GameLayout(
                 )
             }
             if (uiReady && state.attackerIndex == 0) {
-                RolePill("Attacker", Color(0xFFFF8F00), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight))
+                RolePill(stringResource(R.string.role_attacker), Color(0xFFFF8F00), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight))
             } else if (uiReady && state.defenderIndex == 0) {
-                RolePill("Defender", Color(0xFFB71C1C), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight))
+                RolePill(stringResource(R.string.role_defender), Color(0xFFB71C1C), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight))
             }
         }
     }
@@ -686,7 +692,7 @@ private suspend fun animateCard(
 private fun GameOverOverlay(state: GameState, onRestart: () -> Unit, onHome: () -> Unit) {
     val winner = state.players.firstOrNull { it.id == state.winnerId }
     val humanWon = winner?.isHuman == true
-    val winnerName = winner?.name ?: "Someone"
+    val winnerName = winner?.name ?: stringResource(R.string.game_over_winner_fallback)
 
     Box(
         modifier = Modifier
@@ -709,7 +715,7 @@ private fun GameOverOverlay(state: GameState, onRestart: () -> Unit, onHome: () 
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
-                text = if (humanWon) "VICTORY" else "DEFEATED",
+                text = if (humanWon) stringResource(R.string.game_over_victory) else stringResource(R.string.game_over_defeated),
                 color = if (humanWon) Gold else DangerRed.copy(alpha = 0.9f),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.ExtraBold,
@@ -722,7 +728,7 @@ private fun GameOverOverlay(state: GameState, onRestart: () -> Unit, onHome: () 
                 fontWeight = FontWeight.ExtraBold
             )
             Text(
-                text = "wins the round",
+                text = stringResource(R.string.game_over_wins_round),
                 color = TextOnDark.copy(alpha = 0.5f),
                 fontSize = 13.sp
             )
@@ -739,7 +745,7 @@ private fun GameOverOverlay(state: GameState, onRestart: () -> Unit, onHome: () 
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "PLAY AGAIN",
+                        text = stringResource(R.string.game_over_play_again),
                         color = Gold,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
@@ -757,7 +763,7 @@ private fun GameOverOverlay(state: GameState, onRestart: () -> Unit, onHome: () 
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "HOME",
+                        text = stringResource(R.string.game_over_home),
                         color = TextOnDark.copy(alpha = 0.6f),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,

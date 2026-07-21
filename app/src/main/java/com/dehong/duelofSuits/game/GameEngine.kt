@@ -8,6 +8,21 @@ import com.dehong.duelofSuits.model.Rank
 import com.dehong.duelofSuits.model.Suit
 import com.dehong.duelofSuits.model.TableSlot
 
+sealed class AttackError {
+    object EmptySelection : AttackError()
+    object JokerForbidden : AttackError()
+    object MixedRanks : AttackError()
+    object TooManyCards : AttackError()
+    class ExceedsDefenderHand(val defenderHandSize: Int) : AttackError()
+}
+
+sealed class ThrowInError {
+    object EmptySelection : ThrowInError()
+    object JokerForbidden : ThrowInError()
+    object RankMismatch : ThrowInError()
+    class ExceedsLimit(val startCount: Int) : ThrowInError()
+}
+
 object GameEngine {
 
     fun canDefend(attackCard: Card, defenseCard: Card, trumpSuit: Suit): Boolean {
@@ -22,25 +37,25 @@ object GameEngine {
         }
     }
 
-    fun validateAttack(cards: List<Card>, state: GameState): String? {
-        if (cards.isEmpty()) return "Select cards to attack"
-        if (cards.any { it is Card.Joker }) return "Jokers cannot be used to attack"
+    fun validateAttack(cards: List<Card>, state: GameState): AttackError? {
+        if (cards.isEmpty()) return AttackError.EmptySelection
+        if (cards.any { it is Card.Joker }) return AttackError.JokerForbidden
         val suited = cards.filterIsInstance<Card.SuitedCard>()
-        if (suited.map { it.rank }.toSet().size != 1) return "All attack cards must be the same rank"
-        if (cards.size > 4) return "Can play at most 4 cards"
+        if (suited.map { it.rank }.toSet().size != 1) return AttackError.MixedRanks
+        if (cards.size > 4) return AttackError.TooManyCards
         val newTotal = state.tableSlots.size + cards.size
-        if (newTotal > state.defender.hand.size) return "Too many attack cards (defender has ${state.defender.hand.size} cards)"
+        if (newTotal > state.defender.hand.size) return AttackError.ExceedsDefenderHand(state.defender.hand.size)
         return null
     }
 
-    fun validateThrowIn(cards: List<Card>, state: GameState): String? {
-        if (cards.isEmpty()) return "Select cards to throw in"
-        if (cards.any { it is Card.Joker }) return "Jokers cannot be thrown in"
+    fun validateThrowIn(cards: List<Card>, state: GameState): ThrowInError? {
+        if (cards.isEmpty()) return ThrowInError.EmptySelection
+        if (cards.any { it is Card.Joker }) return ThrowInError.JokerForbidden
         val existingRanks = getTableRanks(state)
         val throwRanks = cards.filterIsInstance<Card.SuitedCard>().map { it.rank }.toSet()
-        if (!throwRanks.all { it in existingRanks }) return "Thrown cards must match a rank on the table"
+        if (!throwRanks.all { it in existingRanks }) return ThrowInError.RankMismatch
         val newTotal = state.tableSlots.size + cards.size
-        if (newTotal > state.defenderStartingHandCount) return "Too many cards (defender had ${state.defenderStartingHandCount} cards at start of turn)"
+        if (newTotal > state.defenderStartingHandCount) return ThrowInError.ExceedsLimit(state.defenderStartingHandCount)
         return null
     }
 
