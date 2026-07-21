@@ -93,17 +93,14 @@ fun PlayerHand(
         prevHandSize.intValue = hand.size
         when {
             hand.size == 0 -> spreadFactor.snapTo(0f)
-            hand.size > prev && state.animating -> {
-                // Cards arriving mid-deal — stay collapsed so flying cards land seamlessly
-                spreadFactor.snapTo(0f)
-            }
-            hand.size > prev && !state.animating -> {
-                // Card added with no animation in flight — fan out immediately
-                spreadFactor.snapTo(0f)
+            hand.size > prev && state.animating -> spreadFactor.snapTo(0f)
+            hand.size > prev && spreadFactor.value < 0.01f -> {
+                // First cards arriving (initial deal) — fan out
                 spreadFactor.animateTo(1f, tween(460, easing = FastOutSlowInEasing))
             }
+            hand.size > prev -> spreadFactor.snapTo(1f)
             !state.animating && spreadFactor.value < 0.01f && hand.size > 0 -> {
-                // Deal just finished — fan out now
+                // Deal animation just finished — fan out now
                 spreadFactor.animateTo(1f, tween(460, easing = FastOutSlowInEasing))
             }
         }

@@ -274,10 +274,10 @@ fun AiPlayerArea(
         prevHandSize.intValue = player.hand.size
         when {
             player.hand.size == 0 -> spreadFactor.snapTo(0f)
-            player.hand.size > prev -> {
-                spreadFactor.snapTo(0f)
+            player.hand.size > prev && spreadFactor.value < 0.01f -> {
                 spreadFactor.animateTo(1f, tween(460, easing = FastOutSlowInEasing))
             }
+            player.hand.size > prev -> spreadFactor.snapTo(1f)
         }
     }
     val spread = spreadFactor.value
@@ -367,10 +367,10 @@ fun AiTopArea(
         prevHandSize.intValue = player.hand.size
         when {
             player.hand.size == 0 -> spreadFactor.snapTo(0f)
-            player.hand.size > prev -> {
-                spreadFactor.snapTo(0f)
+            player.hand.size > prev && spreadFactor.value < 0.01f -> {
                 spreadFactor.animateTo(1f, tween(460, easing = FastOutSlowInEasing))
             }
+            player.hand.size > prev -> spreadFactor.snapTo(1f)
         }
     }
     val spread = spreadFactor.value
@@ -460,10 +460,10 @@ fun AiSideArea(
         prevHandSize.intValue = player.hand.size
         when {
             player.hand.size == 0 -> spreadFactor.snapTo(0f)
-            player.hand.size > prev -> {
-                spreadFactor.snapTo(0f)
+            player.hand.size > prev && spreadFactor.value < 0.01f -> {
                 spreadFactor.animateTo(1f, tween(460, easing = FastOutSlowInEasing))
             }
+            player.hand.size > prev -> spreadFactor.snapTo(1f)
         }
     }
     val spread = spreadFactor.value
