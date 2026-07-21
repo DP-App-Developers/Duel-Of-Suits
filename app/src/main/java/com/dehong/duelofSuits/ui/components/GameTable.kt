@@ -28,7 +28,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -238,24 +237,16 @@ private fun TableSlotView(
                     CardView(card = slot.defenseCard, selectionState = CardSelectionState.COMMITTED)
                 }
             } else {
-                val slotBorderColor = when {
-                    canDefendThisSlot -> HighlightCyan.copy(alpha = pulseAlpha)
-                    isHumanDefender   -> Color.White.copy(alpha = 0.25f)
-                    else              -> Color.White.copy(alpha = 0.15f)
-                }
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .offset(x = defenseX, y = defenseY)
                         .requiredSize(cardWidth, cardHeight)
-                        .background(
-                            color = if (canDefendThisSlot) HighlightCyanOverlay else Color.Transparent,
-                            shape = RoundedCornerShape(6.dp)
-                        )
-                        .border(
-                            width = if (canDefendThisSlot) 2.dp else 1.dp,
-                            color = slotBorderColor,
-                            shape = RoundedCornerShape(6.dp)
+                        .then(
+                            if (canDefendThisSlot) Modifier
+                                .background(HighlightCyanOverlay, RoundedCornerShape(6.dp))
+                                .border(2.dp, HighlightCyan.copy(alpha = pulseAlpha), RoundedCornerShape(6.dp))
+                            else Modifier
                         )
                         .then(
                             if (isHumanDefender) Modifier.clickable { onDefenseSlotTapped(slotIndex) }
