@@ -255,6 +255,7 @@ fun AiPlayerArea(
     player: Player,
     state: GameState,
     registry: PositionRegistry,
+    showUI: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val isDefender = state.defenderIndex == player.id
@@ -329,10 +330,10 @@ fun AiPlayerArea(
                     .zIndex(10f)
                     .onGloballyPositioned { registry.register(PositionKey.BubbleAnchor(player.id), it) }
             ) {
-                AiBadge(count = player.hand.size)
+                if (showUI) AiBadge(count = player.hand.size)
             }
         }
-        if (roleLabel != null) {
+        if (showUI && roleLabel != null) {
             Box(modifier = Modifier.onGloballyPositioned {
                 registry.register(PositionKey.BubbleAnchor(player.id), it)
             }) {
@@ -347,6 +348,7 @@ fun AiTopArea(
     player: Player,
     state: GameState,
     registry: PositionRegistry,
+    showUI: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val isDefender = state.defenderIndex == player.id
@@ -421,10 +423,10 @@ fun AiTopArea(
                     .zIndex(10f)
                     .onGloballyPositioned { registry.register(PositionKey.BubbleAnchor(player.id), it) }
             ) {
-                AiBadge(count = player.hand.size)
+                if (showUI) AiBadge(count = player.hand.size)
             }
         }
-        if (roleLabel != null) {
+        if (showUI && roleLabel != null) {
             Box(modifier = Modifier.onGloballyPositioned {
                 registry.register(PositionKey.BubbleAnchor(player.id), it)
             }) {
@@ -439,6 +441,7 @@ fun AiSideArea(
     player: Player,
     state: GameState,
     registry: PositionRegistry,
+    showUI: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val isDefender = state.defenderIndex == player.id
@@ -511,11 +514,11 @@ fun AiSideArea(
                     .zIndex(10f)
                     .onGloballyPositioned { registry.register(PositionKey.BubbleAnchor(player.id), it) }
             ) {
-                AiBadge(count = player.hand.size)
+                if (showUI) AiBadge(count = player.hand.size)
             }
         }
 
-        if (roleLabel != null) {
+        if (showUI && roleLabel != null) {
             RolePill(text = roleLabel, color = roleLabelColor, modifier = Modifier.rotate(90f))
         }
     }

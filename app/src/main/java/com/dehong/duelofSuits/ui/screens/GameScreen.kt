@@ -37,6 +37,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -111,6 +112,16 @@ fun GameScreen(
     val playerBubbles = remember { mutableStateMapOf<Int, String>() }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var uiReady by remember { mutableStateOf(false) }
+
+    LaunchedEffect(state.phase) {
+        if (state.phase == GamePhase.DEALING) {
+            uiReady = false
+        } else {
+            delay(480L)
+            uiReady = true
+        }
+    }
 
     LaunchedEffect(errorMessage) {
         if (errorMessage != null) {
@@ -188,7 +199,8 @@ fun GameScreen(
                     GameLayout(
                         state = state,
                         registry = registry,
-                        viewModel = viewModel
+                        viewModel = viewModel,
+                        uiReady = uiReady
                     )
                 }
             }
@@ -211,7 +223,8 @@ fun GameScreen(
 private fun GameLayout(
     state: GameState,
     registry: PositionRegistry,
-    viewModel: GameViewModel
+    viewModel: GameViewModel,
+    uiReady: Boolean = false
 ) {
     val cardHeight = LocalCardHeight.current
     val tableAlpha = remember { Animatable(1f) }
@@ -237,6 +250,7 @@ private fun GameLayout(
                     player = state.players[1],
                     state = state,
                     registry = registry,
+                    showUI = uiReady,
                     modifier = Modifier.fillMaxWidth().fillMaxHeight()
                 )
                 3 -> {
@@ -244,12 +258,14 @@ private fun GameLayout(
                         player = state.players[1],
                         state = state,
                         registry = registry,
+                        showUI = uiReady,
                         modifier = Modifier.weight(0.5f).fillMaxHeight()
                     )
                     AiTopArea(
                         player = state.players[2],
                         state = state,
                         registry = registry,
+                        showUI = uiReady,
                         modifier = Modifier.weight(0.5f).fillMaxHeight()
                     )
                 }
@@ -258,12 +274,14 @@ private fun GameLayout(
                         player = state.players[2],
                         state = state,
                         registry = registry,
+                        showUI = uiReady,
                         modifier = Modifier.weight(0.5f).fillMaxHeight()
                     )
                     AiTopArea(
                         player = state.players[3],
                         state = state,
                         registry = registry,
+                        showUI = uiReady,
                         modifier = Modifier.weight(0.5f).fillMaxHeight()
                     )
                 }
@@ -276,7 +294,8 @@ private fun GameLayout(
                 AiSideArea(
                     player = state.players[1],
                     state = state,
-                    registry = registry
+                    registry = registry,
+                    showUI = uiReady
                 )
             }
 
@@ -330,9 +349,9 @@ private fun GameLayout(
                     modifier = Modifier.weight(0.15f).fillMaxHeight()
                 )
             }
-            if (state.attackerIndex == 0) {
+            if (uiReady && state.attackerIndex == 0) {
                 RolePill("Attacker", Color(0xFFFF8F00), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-            } else if (state.defenderIndex == 0) {
+            } else if (uiReady && state.defenderIndex == 0) {
                 RolePill("Defender", Color(0xFFB71C1C), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
             }
         }
