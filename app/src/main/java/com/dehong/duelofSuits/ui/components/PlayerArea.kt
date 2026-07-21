@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -26,13 +25,18 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
@@ -47,6 +51,122 @@ import com.dehong.duelofSuits.model.Suit
 import com.dehong.duelofSuits.ui.animation.PositionKey
 import com.dehong.duelofSuits.ui.animation.PositionRegistry
 import com.dehong.duelofSuits.ui.theme.Gold
+
+enum class TailDirection { UP, DOWN, LEFT }
+
+private fun buildBalloonPath(
+    w: Float, h: Float,
+    r: Float, tw: Float, th: Float,
+    dir: TailDirection
+): Path = Path().apply {
+    val midX = w / 2f
+    val midY = h / 2f
+    when (dir) {
+        TailDirection.UP -> {
+            val tLeft  = (midX - tw / 2f).coerceAtLeast(r + 2f)
+            val tRight = (midX + tw / 2f).coerceAtMost(w - r - 2f)
+            moveTo(midX, 0f)
+            lineTo(tRight, th)
+            lineTo(w - r, th)
+            quadraticBezierTo(w, th, w, th + r)
+            lineTo(w, h - r)
+            quadraticBezierTo(w, h, w - r, h)
+            lineTo(r, h)
+            quadraticBezierTo(0f, h, 0f, h - r)
+            lineTo(0f, th + r)
+            quadraticBezierTo(0f, th, r, th)
+            lineTo(tLeft, th)
+            close()
+        }
+        TailDirection.DOWN -> {
+            val bodyH  = h - th
+            val tLeft  = (midX - tw / 2f).coerceAtLeast(r + 2f)
+            val tRight = (midX + tw / 2f).coerceAtMost(w - r - 2f)
+            moveTo(r, 0f)
+            lineTo(w - r, 0f)
+            quadraticBezierTo(w, 0f, w, r)
+            lineTo(w, bodyH - r)
+            quadraticBezierTo(w, bodyH, w - r, bodyH)
+            lineTo(tRight, bodyH)
+            lineTo(midX, h)
+            lineTo(tLeft, bodyH)
+            lineTo(r, bodyH)
+            quadraticBezierTo(0f, bodyH, 0f, bodyH - r)
+            lineTo(0f, r)
+            quadraticBezierTo(0f, 0f, r, 0f)
+            close()
+        }
+        TailDirection.LEFT -> {
+            val tTop = (midY - tw / 2f).coerceAtLeast(r + 2f)
+            val tBot = (midY + tw / 2f).coerceAtMost(h - r - 2f)
+            moveTo(0f, midY)
+            lineTo(th, tTop)
+            lineTo(th, r)
+            quadraticBezierTo(th, 0f, th + r, 0f)
+            lineTo(w - r, 0f)
+            quadraticBezierTo(w, 0f, w, r)
+            lineTo(w, h - r)
+            quadraticBezierTo(w, h, w - r, h)
+            lineTo(th + r, h)
+            quadraticBezierTo(th, h, th, h - r)
+            lineTo(th, tBot)
+            close()
+        }
+    }
+}
+
+@Composable
+fun SpeechBubble(
+    text: String,
+    tailDirection: TailDirection = TailDirection.DOWN,
+    modifier: Modifier = Modifier
+) {
+    val tailH       = 12.dp
+    val tailW       = 15.dp
+    val cornerR     = 10.dp
+    val hPad        = 11.dp
+    val vPad        = 7.dp
+    val fillColor   = Color(0xFFFFFEF5)
+    val strokeColor = Color(0xFF0D0D1A)
+    val shadowColor = Color(0x44000000)
+
+    val topPad    = if (tailDirection == TailDirection.UP)   tailH + vPad else vPad
+    val bottomPad = if (tailDirection == TailDirection.DOWN) tailH + vPad else vPad
+    val startPad  = if (tailDirection == TailDirection.LEFT) tailH + hPad else hPad
+
+    Box(
+        modifier = modifier
+            .drawBehind {
+                val tw = tailW.toPx()
+                val th = tailH.toPx()
+                val r  = cornerR.toPx()
+                val sw = 2.dp.toPx()
+
+                val mainPath = buildBalloonPath(size.width, size.height, r, tw, th, tailDirection)
+
+                // Soft drop shadow
+                withTransform({ translate(2f, 3f) }) {
+                    drawPath(mainPath, shadowColor)
+                }
+
+                // Cream fill
+                drawPath(mainPath, fillColor)
+
+                // Comic ink border
+                drawPath(mainPath, strokeColor, style = Stroke(width = sw, join = StrokeJoin.Round))
+            }
+            .padding(start = startPad, end = hPad, top = topPad, bottom = bottomPad),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = strokeColor,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 1.sp
+        )
+    }
+}
 
 @Composable
 private fun AiBadge(count: Int, modifier: Modifier = Modifier) {
@@ -66,7 +186,6 @@ private fun AiBadge(count: Int, modifier: Modifier = Modifier) {
                 val ringW = 3.2f.dp.toPx()
                 val innerR = outerR - ringW
 
-                // Metallic gold ring
                 drawCircle(
                     brush = Brush.sweepGradient(
                         colors = listOf(
@@ -78,7 +197,6 @@ private fun AiBadge(count: Int, modifier: Modifier = Modifier) {
                     ),
                     radius = outerR
                 )
-                // Deep navy inner disc
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(Color(0xFF1C2E58), Color(0xFF060C1A)),
@@ -87,7 +205,6 @@ private fun AiBadge(count: Int, modifier: Modifier = Modifier) {
                     ),
                     radius = innerR
                 )
-                // Specular highlight — top-left shimmer
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
@@ -109,27 +226,6 @@ private fun AiBadge(count: Int, modifier: Modifier = Modifier) {
             fontSize = 13.sp,
             fontWeight = FontWeight.ExtraBold,
             letterSpacing = (-0.5).sp
-        )
-    }
-}
-
-@Composable
-internal fun PassBubble(text: String = "PASS", modifier: Modifier = Modifier) {
-    val bubbleShape = RoundedCornerShape(12.dp)
-    Box(
-        modifier = modifier
-            .shadow(4.dp, bubbleShape)
-            .background(Color(0xCC0D1B0F), bubbleShape)
-            .border(0.5.dp, Color.White.copy(alpha = 0.18f), bubbleShape)
-            .padding(horizontal = 9.dp, vertical = 4.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = Color.White.copy(alpha = 0.7f),
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
         )
     }
 }
@@ -159,7 +255,6 @@ fun AiPlayerArea(
     player: Player,
     state: GameState,
     registry: PositionRegistry,
-    bubbleText: String? = null,
     modifier: Modifier = Modifier
 ) {
     val isDefender = state.defenderIndex == player.id
@@ -228,26 +323,30 @@ fun AiPlayerArea(
                 }
             }
 
-            AiBadge(
-                count = player.hand.size,
-                modifier = Modifier.align(Alignment.BottomCenter).zIndex(10f)
-            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .zIndex(10f)
+                    .onGloballyPositioned { registry.register(PositionKey.BubbleAnchor(player.id), it) }
+            ) {
+                AiBadge(count = player.hand.size)
+            }
         }
-        if (bubbleText != null) {
-            PassBubble(text = bubbleText)
-        } else if (roleLabel != null) {
-            RolePill(text = roleLabel, color = roleLabelColor)
+        if (roleLabel != null) {
+            Box(modifier = Modifier.onGloballyPositioned {
+                registry.register(PositionKey.BubbleAnchor(player.id), it)
+            }) {
+                RolePill(text = roleLabel, color = roleLabelColor)
+            }
         }
     }
 }
 
-// Top AI area — portrait cards flipped 180° (player looking down), fanned left-right.
 @Composable
 fun AiTopArea(
     player: Player,
     state: GameState,
     registry: PositionRegistry,
-    bubbleText: String? = null,
     modifier: Modifier = Modifier
 ) {
     val isDefender = state.defenderIndex == player.id
@@ -316,26 +415,30 @@ fun AiTopArea(
                 }
             }
 
-            AiBadge(
-                count = player.hand.size,
-                modifier = Modifier.align(Alignment.BottomCenter).zIndex(10f)
-            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .zIndex(10f)
+                    .onGloballyPositioned { registry.register(PositionKey.BubbleAnchor(player.id), it) }
+            ) {
+                AiBadge(count = player.hand.size)
+            }
         }
-        if (bubbleText != null) {
-            PassBubble(text = bubbleText)
-        } else if (roleLabel != null) {
-            RolePill(text = roleLabel, color = roleLabelColor)
+        if (roleLabel != null) {
+            Box(modifier = Modifier.onGloballyPositioned {
+                registry.register(PositionKey.BubbleAnchor(player.id), it)
+            }) {
+                RolePill(text = roleLabel, color = roleLabelColor)
+            }
         }
     }
 }
 
-// Vertical AI area for the left-side player in 4-player mode.
 @Composable
 fun AiSideArea(
     player: Player,
     state: GameState,
     registry: PositionRegistry,
-    bubbleText: String? = null,
     modifier: Modifier = Modifier
 ) {
     val isDefender = state.defenderIndex == player.id
@@ -402,15 +505,17 @@ fun AiSideArea(
                     )
                 }
             }
-            AiBadge(
-                count = player.hand.size,
-                modifier = Modifier.align(Alignment.CenterEnd).zIndex(10f)
-            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .zIndex(10f)
+                    .onGloballyPositioned { registry.register(PositionKey.BubbleAnchor(player.id), it) }
+            ) {
+                AiBadge(count = player.hand.size)
+            }
         }
 
-        if (bubbleText != null) {
-            PassBubble(text = bubbleText)
-        } else if (roleLabel != null) {
+        if (roleLabel != null) {
             RolePill(text = roleLabel, color = roleLabelColor, modifier = Modifier.rotate(90f))
         }
     }

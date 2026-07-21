@@ -1,9 +1,16 @@
 package com.dehong.duelofSuits.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -46,7 +54,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -63,8 +73,9 @@ import com.dehong.duelofSuits.ui.animation.PositionKey
 import com.dehong.duelofSuits.ui.animation.PositionRegistry
 import com.dehong.duelofSuits.ui.components.AiSideArea
 import com.dehong.duelofSuits.ui.components.AiTopArea
-import com.dehong.duelofSuits.ui.components.PassBubble
 import com.dehong.duelofSuits.ui.components.RolePill
+import com.dehong.duelofSuits.ui.components.SpeechBubble
+import com.dehong.duelofSuits.ui.components.TailDirection
 import com.dehong.duelofSuits.ui.components.CARD_HEIGHT
 import com.dehong.duelofSuits.ui.components.CARD_WIDTH
 import com.dehong.duelofSuits.ui.components.LocalCardHeight
@@ -177,14 +188,13 @@ fun GameScreen(
                     GameLayout(
                         state = state,
                         registry = registry,
-                        viewModel = viewModel,
-                        passedPlayers = playerBubbles
+                        viewModel = viewModel
                     )
-
                 }
             }
 
             FlyingCardLayer(flyingCards = flyingCards)
+            SpeechBubbleLayer(state = state, registry = registry, playerBubbles = playerBubbles)
 
             SnackbarHost(
                 hostState = snackbarHostState,
@@ -201,8 +211,7 @@ fun GameScreen(
 private fun GameLayout(
     state: GameState,
     registry: PositionRegistry,
-    viewModel: GameViewModel,
-    passedPlayers: Map<Int, String>
+    viewModel: GameViewModel
 ) {
     val cardHeight = LocalCardHeight.current
     val tableAlpha = remember { Animatable(1f) }
@@ -228,7 +237,6 @@ private fun GameLayout(
                     player = state.players[1],
                     state = state,
                     registry = registry,
-                    bubbleText = passedPlayers[state.players[1].id],
                     modifier = Modifier.fillMaxWidth().fillMaxHeight()
                 )
                 3 -> {
@@ -236,14 +244,12 @@ private fun GameLayout(
                         player = state.players[1],
                         state = state,
                         registry = registry,
-                        bubbleText = passedPlayers[state.players[1].id],
                         modifier = Modifier.weight(0.5f).fillMaxHeight()
                     )
                     AiTopArea(
                         player = state.players[2],
                         state = state,
                         registry = registry,
-                        bubbleText = passedPlayers[state.players[2].id],
                         modifier = Modifier.weight(0.5f).fillMaxHeight()
                     )
                 }
@@ -252,14 +258,12 @@ private fun GameLayout(
                         player = state.players[2],
                         state = state,
                         registry = registry,
-                        bubbleText = passedPlayers[state.players[2].id],
                         modifier = Modifier.weight(0.5f).fillMaxHeight()
                     )
                     AiTopArea(
                         player = state.players[3],
                         state = state,
                         registry = registry,
-                        bubbleText = passedPlayers[state.players[3].id],
                         modifier = Modifier.weight(0.5f).fillMaxHeight()
                     )
                 }
@@ -272,8 +276,7 @@ private fun GameLayout(
                 AiSideArea(
                     player = state.players[1],
                     state = state,
-                    registry = registry,
-                    bubbleText = passedPlayers[state.players[1].id]
+                    registry = registry
                 )
             }
 
@@ -327,16 +330,94 @@ private fun GameLayout(
                     modifier = Modifier.weight(0.15f).fillMaxHeight()
                 )
             }
-            when {
-                0 in passedPlayers -> PassBubble(text = passedPlayers[0]!!, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-                state.attackerIndex == 0 -> RolePill("Attacker", Color(0xFFFF8F00), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
-                state.defenderIndex == 0 -> RolePill("Defender", Color(0xFFB71C1C), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+            if (state.attackerIndex == 0) {
+                RolePill("Attacker", Color(0xFFFF8F00), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+            } else if (state.defenderIndex == 0) {
+                RolePill("Defender", Color(0xFFB71C1C), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
             }
         }
     }
 }
 
 // ── Shared composables ───────────────────────────────────────────────────────
+
+@Composable
+private fun SpeechBubbleLayer(
+    state: GameState,
+    registry: PositionRegistry,
+    playerBubbles: Map<Int, String>
+) {
+    if (playerBubbles.isEmpty()) return
+
+    val density = LocalDensity.current
+    val bubbleSizes = remember { mutableStateMapOf<Int, IntSize>() }
+    val gapPx = with(density) { 4.dp.toPx() }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        state.players.forEach { player ->
+            val text = playerBubbles[player.id]
+
+            val tailDirection = when {
+                player.isHuman -> TailDirection.DOWN
+                state.playerCount == 4 && player.id == 1 -> TailDirection.LEFT
+                else -> TailDirection.UP
+            }
+
+            val transformOrigin = when (tailDirection) {
+                TailDirection.UP   -> TransformOrigin(0.5f, 0.0f)
+                TailDirection.DOWN -> TransformOrigin(0.5f, 1.0f)
+                TailDirection.LEFT -> TransformOrigin(0.0f, 0.5f)
+            }
+
+            val bSize = bubbleSizes[player.id] ?: IntSize.Zero
+
+            val (offsetX, offsetY) = when {
+                player.isHuman -> {
+                    val anchor = registry.getOffset(PositionKey.PlayerArea(0))
+                    val aSize  = registry.getSize(PositionKey.PlayerArea(0))
+                    val cx = anchor.x + aSize.width / 2f
+                    (cx - bSize.width / 2f).toInt() to (anchor.y - bSize.height - gapPx).toInt()
+                }
+                state.playerCount == 4 && player.id == 1 -> {
+                    val anchor = registry.getOffset(PositionKey.BubbleAnchor(player.id))
+                    val aSize  = registry.getSize(PositionKey.BubbleAnchor(player.id))
+                    val cy = anchor.y + aSize.height / 2f
+                    (anchor.x + aSize.width + gapPx).toInt() to (cy - bSize.height / 2f).toInt()
+                }
+                else -> {
+                    val anchor = registry.getOffset(PositionKey.BubbleAnchor(player.id))
+                    val aSize  = registry.getSize(PositionKey.BubbleAnchor(player.id))
+                    val cx = anchor.x + aSize.width / 2f
+                    (cx - bSize.width / 2f).toInt() to (anchor.y + aSize.height + gapPx).toInt()
+                }
+            }
+
+            Box(modifier = Modifier.offset { IntOffset(offsetX, offsetY) }) {
+                AnimatedVisibility(
+                    visible = text != null,
+                    enter = scaleIn(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow
+                        ),
+                        initialScale = 0.55f,
+                        transformOrigin = transformOrigin
+                    ) + fadeIn(animationSpec = tween(120)),
+                    exit = scaleOut(
+                        targetScale = 0.7f,
+                        transformOrigin = transformOrigin
+                    ) + fadeOut(animationSpec = tween(100))
+                ) {
+                    SpeechBubble(
+                        text = text ?: "",
+                        tailDirection = tailDirection,
+                        modifier = Modifier.onSizeChanged { bubbleSizes[player.id] = it }
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun FlyingCardLayer(flyingCards: List<FlyingCard>) {

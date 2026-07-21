@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.unit.IntSize
 import com.dehong.duelofSuits.model.Card
 
 val LocalFlyingCards = compositionLocalOf<Set<Card>> { emptySet() }
@@ -23,16 +24,20 @@ sealed class PositionKey {
     data class AttackSlot(val slotIndex: Int) : PositionKey()
     data class DefenseSlot(val slotIndex: Int) : PositionKey()
     data class PlayerArea(val playerId: Int) : PositionKey()
+    data class BubbleAnchor(val playerId: Int) : PositionKey()
 }
 
 class PositionRegistry {
     private val positions = mutableStateMapOf<String, Offset>()
+    private val sizes = mutableStateMapOf<String, IntSize>()
 
     fun register(key: PositionKey, coordinates: LayoutCoordinates) {
         positions[key.toKey()] = coordinates.positionInRoot()
+        sizes[key.toKey()] = coordinates.size
     }
 
     fun getOffset(key: PositionKey): Offset = positions[key.toKey()] ?: Offset.Zero
+    fun getSize(key: PositionKey): IntSize = sizes[key.toKey()] ?: IntSize.Zero
 
     private fun PositionKey.toKey(): String = when (this) {
         is PositionKey.DrawPile -> "draw"
@@ -43,6 +48,7 @@ class PositionRegistry {
         is PositionKey.AttackSlot -> "attack_$slotIndex"
         is PositionKey.DefenseSlot -> "defense_$slotIndex"
         is PositionKey.PlayerArea -> "player_$playerId"
+        is PositionKey.BubbleAnchor -> "bubble_anchor_$playerId"
     }
 }
 
