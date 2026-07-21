@@ -90,4 +90,6 @@ sealed class AnimationEvent {
     data class PlayerPassed(val playerIdx: Int) : AnimationEvent()
 
     data class PlayerTookCards(val playerIdx: Int) : AnimationEvent()
+
+    data class JokerOnly(val playerIdx: Int) : AnimationEvent()
 }

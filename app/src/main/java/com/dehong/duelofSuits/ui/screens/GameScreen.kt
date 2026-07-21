@@ -160,6 +160,13 @@ fun GameScreen(
                     playerBubbles.remove(event.playerIdx)
                 }
             }
+            if (event is AnimationEvent.JokerOnly) {
+                playerBubbles[event.playerIdx] = "Drawing random 3 cards, I only have Joker!"
+                scope.launch {
+                    delay(2500L)
+                    playerBubbles.remove(event.playerIdx)
+                }
+            }
         }
     }
 
@@ -597,6 +604,7 @@ private fun handleAnimationEvent(
 
         is AnimationEvent.PlayerPassed -> { /* handled in LaunchedEffect collector */ }
         is AnimationEvent.PlayerTookCards -> { /* handled in LaunchedEffect collector */ }
+        is AnimationEvent.JokerOnly -> { /* handled in LaunchedEffect collector */ }
 
         is AnimationEvent.TableToPlayer -> {
             scope.launch {

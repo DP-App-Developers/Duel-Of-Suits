@@ -343,6 +343,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
                         viewModelScope.launch {
                             val fixed = GameEngine.applyJokerOnlyRule(state)
                             if (fixed !== state) {
+                                _animationEvents.emit(AnimationEvent.JokerOnly(state.attackerIndex))
                                 _gameState.value = fixed
                             } else {
                                 delay(800L)
@@ -379,6 +380,7 @@ class GameViewModel(private val playerCount: Int = 3) : ViewModel() {
         val attackerIdx = state.attackerIndex
         var currentState = GameEngine.applyJokerOnlyRule(state)
         if (currentState !== state) {
+            _animationEvents.emit(AnimationEvent.JokerOnly(attackerIdx))
             _gameState.value = currentState
             delay(600L)
             currentState = _gameState.value
