@@ -140,7 +140,7 @@ fun PlayerHand(
                     // Interpolate from center to final fan position
                     val xPx = (centerX + (finalX - centerX) * spread).roundToInt()
                     val yPx = if (selState == CardSelectionState.SELECTED) {
-                        with(density) { (-8).dp.roundToPx() }
+                        with(density) { -(cardHeight * 0.2f).roundToPx() }
                     } else 0
 
                     CardView(

@@ -378,9 +378,9 @@ private fun GameLayout(
                 )
             }
             if (uiReady && state.attackerIndex == 0) {
-                RolePill("Attacker", Color(0xFFFF8F00), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                RolePill("Attacker", Color(0xFFFF8F00), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight))
             } else if (uiReady && state.defenderIndex == 0) {
-                RolePill("Defender", Color(0xFFB71C1C), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight * 0.8f + 12.dp))
+                RolePill("Defender", Color(0xFFB71C1C), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardHeight))
             }
         }
     }
