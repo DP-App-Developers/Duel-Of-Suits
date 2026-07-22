@@ -14,14 +14,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dehong.duelofSuits.R
@@ -32,74 +35,79 @@ import com.dehong.duelofSuits.ui.theme.TextOnDark
 
 @Composable
 fun HomeScreen(onStartGame: (Int) -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.radialGradient(listOf(TableGreenLight, TableGreen))
-            )
-            .drawBehind {
-                // Fine felt cross-hatch texture
-                val lineColor = Color.Black.copy(alpha = 0.05f)
-                val spacing = 5.dp.toPx()
-                var x = -size.height
-                while (x < size.width + size.height) {
-                    drawLine(lineColor, Offset(x, 0f), Offset(x + size.height, size.height), 0.7f)
-                    x += spacing
-                }
-                x = 0f
-                while (x < size.width + size.height) {
-                    drawLine(lineColor, Offset(x, 0f), Offset(x - size.height, size.height), 0.7f)
-                    x += spacing
-                }
-            },
-        contentAlignment = Alignment.Center
+    val currentDensity = LocalDensity.current
+    CompositionLocalProvider(
+        LocalDensity provides Density(currentDensity.density, fontScale = 1f)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(0.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(listOf(TableGreenLight, TableGreen))
+                )
+                .drawBehind {
+                    // Fine felt cross-hatch texture
+                    val lineColor = Color.Black.copy(alpha = 0.05f)
+                    val spacing = 5.dp.toPx()
+                    var x = -size.height
+                    while (x < size.width + size.height) {
+                        drawLine(lineColor, Offset(x, 0f), Offset(x + size.height, size.height), 0.7f)
+                        x += spacing
+                    }
+                    x = 0f
+                    while (x < size.width + size.height) {
+                        drawLine(lineColor, Offset(x, 0f), Offset(x - size.height, size.height), 0.7f)
+                        x += spacing
+                    }
+                },
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = stringResource(R.string.home_title),
-                color = Gold,
-                fontSize = 36.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 3.sp
-            )
-
-            // Ornamental divider
-            Spacer(Modifier.height(10.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                Box(Modifier.width(60.dp).height(1.dp).background(Gold.copy(alpha = 0.45f)))
-                Text(stringResource(R.string.home_ornament_diamond), color = Gold.copy(alpha = 0.7f), fontSize = 13.sp)
-                Box(Modifier.width(60.dp).height(1.dp).background(Gold.copy(alpha = 0.45f)))
-            }
-            Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.home_title),
+                    color = Gold,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 3.sp
+                )
 
-            Text(
-                text = stringResource(R.string.home_subtitle),
-                color = TextOnDark.copy(alpha = 0.45f),
-                fontSize = 10.sp,
-                letterSpacing = 2.sp
-            )
+                // Ornamental divider
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(Modifier.width(60.dp).height(1.dp).background(Gold.copy(alpha = 0.45f)))
+                    Text(stringResource(R.string.home_ornament_diamond), color = Gold.copy(alpha = 0.7f), fontSize = 13.sp)
+                    Box(Modifier.width(60.dp).height(1.dp).background(Gold.copy(alpha = 0.45f)))
+                }
+                Spacer(Modifier.height(8.dp))
 
-            Spacer(modifier = Modifier.height(52.dp))
+                Text(
+                    text = stringResource(R.string.home_subtitle),
+                    color = TextOnDark.copy(alpha = 0.45f),
+                    fontSize = 10.sp,
+                    letterSpacing = 2.sp
+                )
 
-            Text(
-                text = stringResource(R.string.home_choose_players),
-                color = TextOnDark.copy(alpha = 0.65f),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.5.sp
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                PlayerCountButton(count = 2, onStartGame = onStartGame)
-                PlayerCountButton(count = 3, onStartGame = onStartGame)
-                PlayerCountButton(count = 4, onStartGame = onStartGame)
+                Spacer(modifier = Modifier.height(52.dp))
+
+                Text(
+                    text = stringResource(R.string.home_choose_players),
+                    color = TextOnDark.copy(alpha = 0.65f),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    letterSpacing = 0.5.sp
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    PlayerCountButton(count = 2, onStartGame = onStartGame)
+                    PlayerCountButton(count = 3, onStartGame = onStartGame)
+                    PlayerCountButton(count = 4, onStartGame = onStartGame)
+                }
             }
         }
     }
