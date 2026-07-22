@@ -18,14 +18,13 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.res.stringResource
@@ -124,63 +123,58 @@ private fun CardBack(alpha: Float) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.linearGradient(listOf(CardBackBlue, CardBackBlueLight))
-            )
-            .drawWithContent {
-                drawContent()
-                drawCardBackPattern()
+            .background(Brush.linearGradient(listOf(CardBackBlue, CardBackBlueLight)))
+            .drawWithCache {
+                val gold = Gold
+                val lineColor = gold.copy(alpha = 0.14f)
+                val spacing = 7.dp.toPx()
+
+                val lineStarts = mutableListOf<Offset>()
+                val lineEnds = mutableListOf<Offset>()
+                var x = -size.height
+                while (x < size.width + size.height) {
+                    lineStarts += Offset(x, 0f);              lineEnds += Offset(x + size.height, size.height)
+                    x += spacing
+                }
+                x = -size.height
+                while (x < size.width + size.height) {
+                    lineStarts += Offset(x + size.height, 0f); lineEnds += Offset(x, size.height)
+                    x += spacing
+                }
+                val lineCount = lineStarts.size
+
+                val outerInset   = 3.5f.dp.toPx()
+                val outerTopLeft = Offset(outerInset, outerInset)
+                val outerSize    = Size(size.width - outerInset * 2, size.height - outerInset * 2)
+                val outerColor   = gold.copy(alpha = 0.55f)
+                val outerCorner  = CornerRadius(5.dp.toPx())
+                val outerStroke  = Stroke(width = 1.5f.dp.toPx())
+
+                val innerInset   = 6.5f.dp.toPx()
+                val innerTopLeft = Offset(innerInset, innerInset)
+                val innerSize    = Size(size.width - innerInset * 2, size.height - innerInset * 2)
+                val innerColor   = gold.copy(alpha = 0.35f)
+                val innerCorner  = CornerRadius(3.dp.toPx())
+                val innerStroke  = Stroke(width = 0.8f.dp.toPx())
+
+                val cx = size.width / 2f; val cy = size.height / 2f; val r = 7.dp.toPx()
+                val diamond = Path().apply {
+                    moveTo(cx, cy - r); lineTo(cx + r, cy)
+                    lineTo(cx, cy + r); lineTo(cx - r, cy)
+                    close()
+                }
+                val diamondColor  = gold.copy(alpha = 0.30f)
+                val diamondStroke = Stroke(width = 0.9f.dp.toPx())
+
+                onDrawWithContent {
+                    drawContent()
+                    repeat(lineCount) { i -> drawLine(lineColor, lineStarts[i], lineEnds[i], 0.8f) }
+                    drawRoundRect(outerColor, outerTopLeft, outerSize, outerCorner, style = outerStroke)
+                    drawRoundRect(innerColor, innerTopLeft, innerSize, innerCorner, style = innerStroke)
+                    drawPath(diamond, diamondColor, style = diamondStroke)
+                }
             }
     )
-}
-
-private fun DrawScope.drawCardBackPattern() {
-    val gold = Gold
-    val spacing = 7.dp.toPx()
-
-    // Diamond cross-hatch: two diagonal directions
-    val lineAlpha = gold.copy(alpha = 0.14f)
-    var x = -size.height
-    while (x < size.width + size.height) {
-        drawLine(lineAlpha, Offset(x, 0f), Offset(x + size.height, size.height), 0.8f)
-        x += spacing
-    }
-    x = -size.height
-    while (x < size.width + size.height) {
-        drawLine(lineAlpha, Offset(x + size.height, 0f), Offset(x, size.height), 0.8f)
-        x += spacing
-    }
-
-    // Outer gold border
-    val outerInset = 3.5f.dp.toPx()
-    drawRoundRect(
-        color = gold.copy(alpha = 0.55f),
-        topLeft = Offset(outerInset, outerInset),
-        size = Size(size.width - outerInset * 2, size.height - outerInset * 2),
-        cornerRadius = CornerRadius(5.dp.toPx()),
-        style = Stroke(width = 1.5.dp.toPx())
-    )
-
-    // Inner gold border
-    val innerInset = 6.5f.dp.toPx()
-    drawRoundRect(
-        color = gold.copy(alpha = 0.35f),
-        topLeft = Offset(innerInset, innerInset),
-        size = Size(size.width - innerInset * 2, size.height - innerInset * 2),
-        cornerRadius = CornerRadius(3.dp.toPx()),
-        style = Stroke(width = 0.8.dp.toPx())
-    )
-
-    // Center diamond ornament
-    val cx = size.width / 2f
-    val cy = size.height / 2f
-    val r = 7.dp.toPx()
-    val diamond = Path().apply {
-        moveTo(cx, cy - r); lineTo(cx + r, cy)
-        lineTo(cx, cy + r); lineTo(cx - r, cy)
-        close()
-    }
-    drawPath(diamond, gold.copy(alpha = 0.30f), style = Stroke(0.9.dp.toPx()))
 }
 
 @Composable
@@ -196,17 +190,17 @@ private fun CardFrontSuited(card: Card.SuitedCard, alpha: Float) {
         modifier = Modifier
             .fillMaxSize()
             .background(CardFace)
-            .drawWithContent {
-                drawContent()
-                // Subtle ivory inner border
-                val inset = 2.5f.dp.toPx()
-                drawRoundRect(
-                    color = Color.Black.copy(alpha = 0.07f),
-                    topLeft = Offset(inset, inset),
-                    size = Size(size.width - inset * 2, size.height - inset * 2),
-                    cornerRadius = CornerRadius(5.dp.toPx()),
-                    style = Stroke(width = 0.8.dp.toPx())
-                )
+            .drawWithCache {
+                val inset       = 2.5f.dp.toPx()
+                val borderColor = Color.Black.copy(alpha = 0.07f)
+                val topLeft     = Offset(inset, inset)
+                val rectSize    = Size(size.width - inset * 2, size.height - inset * 2)
+                val corner      = CornerRadius(5.dp.toPx())
+                val stroke      = Stroke(width = 0.8f.dp.toPx())
+                onDrawWithContent {
+                    drawContent()
+                    drawRoundRect(borderColor, topLeft, rectSize, corner, style = stroke)
+                }
             }
     ) {
         Column(
@@ -263,16 +257,17 @@ private fun CardFrontJoker(card: Card.Joker, alpha: Float) {
         modifier = Modifier
             .fillMaxSize()
             .background(CardFace)
-            .drawWithContent {
-                drawContent()
-                val inset = 2.5f.dp.toPx()
-                drawRoundRect(
-                    color = Color.Black.copy(alpha = 0.07f),
-                    topLeft = Offset(inset, inset),
-                    size = Size(size.width - inset * 2, size.height - inset * 2),
-                    cornerRadius = CornerRadius(5.dp.toPx()),
-                    style = Stroke(width = 0.8.dp.toPx())
-                )
+            .drawWithCache {
+                val inset       = 2.5f.dp.toPx()
+                val borderColor = Color.Black.copy(alpha = 0.07f)
+                val topLeft     = Offset(inset, inset)
+                val rectSize    = Size(size.width - inset * 2, size.height - inset * 2)
+                val corner      = CornerRadius(5.dp.toPx())
+                val stroke      = Stroke(width = 0.8f.dp.toPx())
+                onDrawWithContent {
+                    drawContent()
+                    drawRoundRect(borderColor, topLeft, rectSize, corner, style = stroke)
+                }
             },
         contentAlignment = Alignment.Center
     ) {

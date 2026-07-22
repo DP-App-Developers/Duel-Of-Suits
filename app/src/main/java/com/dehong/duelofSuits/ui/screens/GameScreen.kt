@@ -46,7 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
@@ -207,18 +207,24 @@ fun GameScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Brush.radialGradient(listOf(TableGreenLight, TableGreen)))
-                .drawBehind {
+                .drawWithCache {
                     val lineColor = Color.Black.copy(alpha = 0.05f)
                     val spacing = 5.dp.toPx()
+                    val lineStarts = mutableListOf<Offset>()
+                    val lineEnds   = mutableListOf<Offset>()
                     var x = -size.height
                     while (x < size.width + size.height) {
-                        drawLine(lineColor, Offset(x, 0f), Offset(x + size.height, size.height), 0.7f)
+                        lineStarts += Offset(x, 0f); lineEnds += Offset(x + size.height, size.height)
                         x += spacing
                     }
                     x = 0f
                     while (x < size.width + size.height) {
-                        drawLine(lineColor, Offset(x, 0f), Offset(x - size.height, size.height), 0.7f)
+                        lineStarts += Offset(x, 0f); lineEnds += Offset(x - size.height, size.height)
                         x += spacing
+                    }
+                    val lineCount = lineStarts.size
+                    onDrawBehind {
+                        repeat(lineCount) { i -> drawLine(lineColor, lineStarts[i], lineEnds[i], 0.7f) }
                     }
                 }
         ) {

@@ -176,6 +176,46 @@ fun GameTable(
 }
 
 @Composable
+private fun PulsingDefenseTarget(
+    modifier: Modifier,
+    isHumanDefender: Boolean,
+    slotIndex: Int,
+    registry: PositionRegistry,
+    onDefenseSlotTapped: (Int) -> Unit
+) {
+    val transition = rememberInfiniteTransition(label = "defenseSlot")
+    val pulseAlpha by transition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
+    Box(
+        modifier = modifier
+            .background(HighlightCyanOverlay, RoundedCornerShape(6.dp))
+            .border(2.dp, HighlightCyan.copy(alpha = pulseAlpha), RoundedCornerShape(6.dp))
+            .then(
+                if (isHumanDefender) Modifier.clickable { onDefenseSlotTapped(slotIndex) }
+                else Modifier
+            )
+            .onGloballyPositioned { coords ->
+                registry.register(PositionKey.DefenseSlot(slotIndex), coords)
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "↓",
+            color = HighlightCyan.copy(alpha = pulseAlpha),
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
 private fun TableSlotView(
     slot: TableSlot,
     slotIndex: Int,
@@ -193,17 +233,6 @@ private fun TableSlotView(
             selectedHandCard != null &&
             GameEngine.canDefend(slot.attackCard, selectedHandCard, state.trumpSuit)
     val flyingCards = LocalFlyingCards.current
-
-    val infiniteTransition = rememberInfiniteTransition(label = "defenseSlot")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.5f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse"
-    )
 
     CompositionLocalProvider(
         LocalCardWidth  provides cardWidth,
@@ -237,34 +266,29 @@ private fun TableSlotView(
                     CardView(card = slot.defenseCard, selectionState = CardSelectionState.COMMITTED)
                 }
             } else {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .offset(x = defenseX, y = defenseY)
-                        .requiredSize(cardWidth, cardHeight)
-                        .then(
-                            if (canDefendThisSlot) Modifier
-                                .background(HighlightCyanOverlay, RoundedCornerShape(6.dp))
-                                .border(2.dp, HighlightCyan.copy(alpha = pulseAlpha), RoundedCornerShape(6.dp))
-                            else Modifier
-                        )
-                        .then(
-                            if (isHumanDefender) Modifier.clickable { onDefenseSlotTapped(slotIndex) }
-                            else Modifier
-                        )
-                        .onGloballyPositioned { coords ->
-                            registry.register(PositionKey.DefenseSlot(slotIndex), coords)
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (canDefendThisSlot) {
-                        Text(
-                            text = "↓",
-                            color = HighlightCyan.copy(alpha = pulseAlpha),
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                val slotModifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(x = defenseX, y = defenseY)
+                    .requiredSize(cardWidth, cardHeight)
+                if (canDefendThisSlot) {
+                    PulsingDefenseTarget(
+                        modifier = slotModifier,
+                        isHumanDefender = isHumanDefender,
+                        slotIndex = slotIndex,
+                        registry = registry,
+                        onDefenseSlotTapped = onDefenseSlotTapped
+                    )
+                } else {
+                    Box(
+                        modifier = slotModifier
+                            .then(
+                                if (isHumanDefender) Modifier.clickable { onDefenseSlotTapped(slotIndex) }
+                                else Modifier
+                            )
+                            .onGloballyPositioned { coords ->
+                                registry.register(PositionKey.DefenseSlot(slotIndex), coords)
+                            }
+                    )
                 }
             }
         }
