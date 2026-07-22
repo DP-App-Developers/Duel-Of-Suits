@@ -25,7 +25,7 @@
     <string name="action_attack">ATTACK</string>
     <string name="action_throw_in">THROW IN</string>
     <string name="action_pass">PASS</string>
-    <string name="action_take_cards">TAKE CARDS</string>
+    <string name="action_take_cards">TAKE</string>
 
     <!-- Speech Bubbles -->
     <string name="bubble_ill_start">I\'ll start</string>
