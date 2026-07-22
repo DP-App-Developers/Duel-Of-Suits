@@ -55,7 +55,11 @@ val CARD_HEIGHT = 78.dp
 val LocalCardWidth  = compositionLocalOf { CARD_WIDTH }
 val LocalCardHeight = compositionLocalOf { CARD_HEIGHT }
 
-private val CARD_SHAPE = RoundedCornerShape(8.dp)
+@Composable
+fun cardShape(): RoundedCornerShape {
+    val scale = LocalCardWidth.current.value / CARD_WIDTH.value
+    return RoundedCornerShape((8f * scale).dp)
+}
 
 @Composable
 fun CardView(
@@ -80,8 +84,9 @@ fun CardView(
 
     val cardWidth  = LocalCardWidth.current
     val cardHeight = LocalCardHeight.current
+    val cardShape  = cardShape()
     Surface(
-        shape = CARD_SHAPE,
+        shape = cardShape,
         shadowElevation = when (selectionState) {
             CardSelectionState.SELECTED    -> 12.dp
             CardSelectionState.HIGHLIGHTED -> 8.dp
@@ -91,7 +96,7 @@ fun CardView(
         modifier = modifier
             .size(cardWidth, cardHeight)
             .then(
-                if (borderWidth > 0.dp) Modifier.border(borderWidth, borderColor, CARD_SHAPE)
+                if (borderWidth > 0.dp) Modifier.border(borderWidth, borderColor, cardShape)
                 else Modifier
             )
     ) {
@@ -286,11 +291,12 @@ private fun CardFrontJoker(card: Card.Joker, alpha: Float) {
 
 @Composable
 fun CardPlaceholder(modifier: Modifier = Modifier) {
+    val shape = cardShape()
     Box(
         modifier = modifier
             .size(LocalCardWidth.current, LocalCardHeight.current)
-            .border(1.dp, Gold.copy(alpha = 0.2f), CARD_SHAPE)
-            .clip(CARD_SHAPE)
+            .border(1.dp, Gold.copy(alpha = 0.2f), shape)
+            .clip(shape)
             .background(Color.White.copy(alpha = 0.03f))
     )
 }
