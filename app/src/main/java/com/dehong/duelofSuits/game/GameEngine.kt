@@ -9,7 +9,6 @@ import com.dehong.duelofSuits.model.Suit
 import com.dehong.duelofSuits.model.TableSlot
 
 sealed class AttackError {
-    object EmptySelection : AttackError()
     object JokerForbidden : AttackError()
     object MixedRanks : AttackError()
     object TooManyCards : AttackError()
@@ -17,7 +16,6 @@ sealed class AttackError {
 }
 
 sealed class ThrowInError {
-    object EmptySelection : ThrowInError()
     object JokerForbidden : ThrowInError()
     object RankMismatch : ThrowInError()
     class ExceedsLimit(val startCount: Int) : ThrowInError()
@@ -38,7 +36,6 @@ object GameEngine {
     }
 
     fun validateAttack(cards: List<Card>, state: GameState): AttackError? {
-        if (cards.isEmpty()) return AttackError.EmptySelection
         if (cards.any { it is Card.Joker }) return AttackError.JokerForbidden
         val suited = cards.filterIsInstance<Card.SuitedCard>()
         if (suited.map { it.rank }.toSet().size != 1) return AttackError.MixedRanks
@@ -49,7 +46,6 @@ object GameEngine {
     }
 
     fun validateThrowIn(cards: List<Card>, state: GameState): ThrowInError? {
-        if (cards.isEmpty()) return ThrowInError.EmptySelection
         if (cards.any { it is Card.Joker }) return ThrowInError.JokerForbidden
         val existingRanks = getTableRanks(state)
         val throwRanks = cards.filterIsInstance<Card.SuitedCard>().map { it.rank }.toSet()

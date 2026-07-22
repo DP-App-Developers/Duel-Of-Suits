@@ -66,7 +66,6 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
     private fun getString(resId: Int, vararg args: Any): String = getApplication<Application>().getString(resId, *args)
 
     private fun AttackError.toMessage(): String = when (this) {
-        AttackError.EmptySelection -> getString(R.string.error_select_to_attack)
         AttackError.JokerForbidden -> getString(R.string.error_joker_cannot_attack)
         AttackError.MixedRanks -> getString(R.string.error_same_rank_required)
         AttackError.TooManyCards -> getString(R.string.error_max_four_cards)
@@ -74,7 +73,6 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
     }
 
     private fun ThrowInError.toMessage(): String = when (this) {
-        ThrowInError.EmptySelection -> getString(R.string.error_select_to_throw_in)
         ThrowInError.JokerForbidden -> getString(R.string.error_joker_cannot_throw_in)
         ThrowInError.RankMismatch -> getString(R.string.error_thrown_must_match_rank)
         is ThrowInError.ExceedsLimit -> getString(R.string.error_too_many_throw_in_cards, startCount)
