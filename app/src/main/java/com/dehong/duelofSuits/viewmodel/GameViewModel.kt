@@ -287,8 +287,11 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
                     val newState = GameEngine.processAttack(selected, 0, state)
                     _gameState.value = state.copy(players = newState.players, selectedCards = emptySet(), animating = true)
                     emitPlayCardAnimations(selected, 0, state.tableSlots.size)
+                    // Put cards in tableSlots now so the flyingCards alpha-mask reveals them
+                    // seamlessly when each animation lands, instead of a blank gap.
+                    _gameState.value = newState.copy(animating = true, reservedSlotCount = 0, boardScale = _gameState.value.boardScale)
                     delay(500L)
-                    val finalState = newState.copy(animating = false, reservedSlotCount = 0, boardScale = _gameState.value.boardScale)
+                    val finalState = _gameState.value.copy(animating = false)
                     if (checkAndApplyImmediateWin(finalState)) return@launch
                     _gameState.value = finalState
                     checkAndRunAiTurn()
@@ -302,8 +305,9 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
                     val newState = GameEngine.processThrowIn(selected, 0, state)
                     _gameState.value = state.copy(players = newState.players, selectedCards = emptySet(), animating = true)
                     emitPlayCardAnimations(selected, 0, state.tableSlots.size)
+                    _gameState.value = newState.copy(animating = true, reservedSlotCount = 0, boardScale = _gameState.value.boardScale)
                     delay(500L)
-                    val finalState = newState.copy(animating = false, reservedSlotCount = 0, boardScale = _gameState.value.boardScale)
+                    val finalState = _gameState.value.copy(animating = false)
                     if (checkAndApplyImmediateWin(finalState)) return@launch
                     _gameState.value = finalState
                     checkAndRunAiTurn()
@@ -457,8 +461,9 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
         val newState = GameEngine.processAttack(cards, attackerIdx, currentState)
         _gameState.value = currentState.copy(players = newState.players, selectedCards = emptySet(), animating = true)
         emitPlayCardAnimations(cards, attackerIdx, currentState.tableSlots.size)
+        _gameState.value = newState.copy(animating = true, reservedSlotCount = 0, boardScale = _gameState.value.boardScale)
         delay(500L)
-        val finalState = newState.copy(animating = false, reservedSlotCount = 0, boardScale = _gameState.value.boardScale)
+        val finalState = _gameState.value.copy(animating = false)
         if (checkAndApplyImmediateWin(finalState)) return
         _gameState.value = finalState
 
@@ -496,8 +501,9 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
             val newState = GameEngine.processThrowIn(cards, playerIdx, currentState)
             _gameState.value = currentState.copy(players = newState.players, selectedCards = emptySet(), animating = true)
             emitPlayCardAnimations(cards, playerIdx, currentState.tableSlots.size)
+            _gameState.value = newState.copy(animating = true, reservedSlotCount = 0, boardScale = _gameState.value.boardScale)
             delay(500L)
-            val finalState = newState.copy(animating = false, reservedSlotCount = 0, boardScale = _gameState.value.boardScale)
+            val finalState = _gameState.value.copy(animating = false)
             if (checkAndApplyImmediateWin(finalState)) return
             _gameState.value = finalState
             delay(300L)
