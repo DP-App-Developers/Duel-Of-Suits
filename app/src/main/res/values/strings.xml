@@ -16,10 +16,8 @@
     <!-- Game Over Overlay -->
     <string name="game_over_victory">VICTORY</string>
     <string name="game_over_defeated">DEFEATED</string>
-    <string name="game_over_wins_round">wins the round</string>
     <string name="game_over_play_again">PLAY AGAIN</string>
     <string name="game_over_home">HOME</string>
-    <string name="game_over_winner_fallback">Someone</string>
 
     <!-- Action Buttons -->
     <string name="action_attack">ATTACK</string>
@@ -40,12 +38,6 @@
     <!-- Card Labels -->
     <string name="card_joker_emoji">🃏</string>
     <string name="card_joker">JOKER</string>
-
-    <!-- Player Names -->
-    <string name="player_name_human">You</string>
-    <string name="player_name_ai_1">Alex</string>
-    <string name="player_name_ai_2">Sam</string>
-    <string name="player_name_ai_3">Ryan</string>
 
     <!-- Error / Validation Messages (shown in Snackbar) -->
     <string name="error_joker_cannot_attack">Jokers cannot be used to attack</string>

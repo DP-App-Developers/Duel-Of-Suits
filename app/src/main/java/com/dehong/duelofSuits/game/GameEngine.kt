@@ -67,7 +67,7 @@ object GameEngine {
             phase = GamePhase.DEFENSE_PHASE,
             throwInPassedIndices = emptySet(),
             defenderStartingHandCount = state.defender.hand.size,
-            message = "${state.defender.name} must defend"
+            message = "Defender must defend"
         )
     }
 
@@ -82,7 +82,7 @@ object GameEngine {
             tableSlots = newSlots,
             selectedCards = emptySet(),
             throwInPassedIndices = newPassed,
-            message = "${state.defender.name} must defend ${newSlots.size} card(s)"
+            message = "Defender must defend ${newSlots.size} card(s)"
         )
         return checkThrowInEnd(newState)
     }
@@ -100,7 +100,7 @@ object GameEngine {
             state.copy(
                 phase = GamePhase.DEFENSE_PHASE,
                 throwInPassedIndices = emptySet(),
-                message = "${state.defender.name} is defending"
+                message = "Defender is defending"
             )
         } else {
             state.copy(
@@ -166,7 +166,7 @@ object GameEngine {
             selectedCards = emptySet(),
             selectedHandCardForDefense = null,
             throwInPassedIndices = emptySet(),
-            message = "${defender.name} takes all cards. ${updatedPlayers[nextAttackerIdx].name} attacks!"
+            message = "Defender takes all cards. Attacker attacks!"
         )
     }
 
@@ -193,7 +193,7 @@ object GameEngine {
             phase = GamePhase.ATTACK_PHASE,
             attackerIndex = nextAttackerIdx,
             defenderIndex = nextDefenderIdx,
-            message = "${players[nextAttackerIdx].name} attacks!"
+            message = "Attacker attacks!"
         )
     }
 
@@ -214,7 +214,7 @@ object GameEngine {
         return state.copy(
             players = updatedPlayers,
             discardPile = state.discardPile - toDraw.toSet(),
-            message = "${attacker.name} has only Jokers — drew ${toDraw.size} cards from discard"
+            message = "Attacker has only Jokers — drew ${toDraw.size} cards from discard"
         )
     }
 
@@ -229,7 +229,7 @@ object GameEngine {
             selectedCards = emptySet(),
             selectedHandCardForDefense = null,
             throwInPassedIndices = emptySet(),
-            message = "${state.attacker.name} has only Jokers — attack skipped"
+            message = "Attacker has only Jokers — attack skipped"
         )
     }
 

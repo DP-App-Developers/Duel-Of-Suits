@@ -218,7 +218,7 @@ fun HandCountBadge(
                 .padding(horizontal = 6.dp, vertical = 2.dp)
         ) {
             Text(
-                text = "${player.name}: ${player.hand.size} cards",
+                text = "${player.hand.size} cards",
                 color = TextOnDark,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium

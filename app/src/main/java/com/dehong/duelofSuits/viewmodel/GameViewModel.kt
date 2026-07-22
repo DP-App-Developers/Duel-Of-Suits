@@ -33,14 +33,6 @@ private const val RESIZE_ANIM_WAIT_MS = 400L
 
 class GameViewModel(application: Application, private val playerCount: Int = 3) : AndroidViewModel(application) {
 
-    // Must be initialized before _gameState, which calls createInitialState() → playerNames.
-    private val playerNames: List<String> = listOf(
-        application.getString(R.string.player_name_human),
-        application.getString(R.string.player_name_ai_1),
-        application.getString(R.string.player_name_ai_2),
-        application.getString(R.string.player_name_ai_3)
-    )
-
     private val _gameState = MutableStateFlow(createInitialState())
     val gameState: StateFlow<GameState> = _gameState.asStateFlow()
 
@@ -82,7 +74,7 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
 
     private fun createInitialState(): GameState {
         val players = (0 until playerCount).map { i ->
-            Player(id = i, name = playerNames[i], isHuman = i == 0)
+            Player(id = i, isHuman = i == 0)
         }
         return GameState(
             players = players,
@@ -109,7 +101,7 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
             val trumpSuit = (trumpCard as? Card.SuitedCard)?.suit ?: Suit.SPADES
 
             val players = (0 until playerCount).map { i ->
-                Player(id = i, name = playerNames[i], isHuman = i == 0, hand = hands[i])
+                Player(id = i, isHuman = i == 0, hand = hands[i])
             }
 
             val attackerIdx = (0 until playerCount).random()

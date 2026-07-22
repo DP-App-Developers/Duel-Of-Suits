@@ -707,7 +707,6 @@ private suspend fun animateCard(
 private fun GameOverOverlay(state: GameState, onRestart: () -> Unit, onHome: () -> Unit) {
     val winner = state.players.firstOrNull { it.id == state.winnerId }
     val humanWon = winner?.isHuman == true
-    val winnerName = winner?.name ?: stringResource(R.string.game_over_winner_fallback)
 
     Box(
         modifier = Modifier
@@ -732,20 +731,9 @@ private fun GameOverOverlay(state: GameState, onRestart: () -> Unit, onHome: () 
             Text(
                 text = if (humanWon) stringResource(R.string.game_over_victory) else stringResource(R.string.game_over_defeated),
                 color = if (humanWon) Gold else DangerRed.copy(alpha = 0.9f),
-                fontSize = 11.sp,
+                fontSize = 38.sp,
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = 4.sp
-            )
-            Text(
-                text = winnerName,
-                color = if (humanWon) Gold else Color.White,
-                fontSize = 38.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-            Text(
-                text = stringResource(R.string.game_over_wins_round),
-                color = TextOnDark.copy(alpha = 0.5f),
-                fontSize = 13.sp
             )
             Spacer(Modifier.height(20.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
