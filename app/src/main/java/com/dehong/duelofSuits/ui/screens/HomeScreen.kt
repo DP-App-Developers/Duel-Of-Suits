@@ -153,17 +153,6 @@ private fun PlayerCountButton(count: Int, onStartGame: (Int) -> Unit) {
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.5.sp
             )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = when (count) {
-                    2 -> stringResource(R.string.home_vs_one_ai)
-                    3 -> stringResource(R.string.home_vs_two_ai)
-                    else -> stringResource(R.string.home_vs_three_ai)
-                },
-                color = Gold.copy(alpha = 0.55f),
-                fontSize = 10.sp,
-                letterSpacing = 0.3.sp
-            )
         }
     }
 }

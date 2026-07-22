@@ -9,9 +9,6 @@
     <string name="home_choose_players">Choose number of players</string>
     <string name="home_player_singular">Player</string>
     <string name="home_player_plural">Players</string>
-    <string name="home_vs_one_ai">vs 1 AI</string>
-    <string name="home_vs_two_ai">vs 2 AI</string>
-    <string name="home_vs_three_ai">vs 3 AI</string>
 
     <!-- Game Over Overlay -->
     <string name="game_over_victory">VICTORY</string>
