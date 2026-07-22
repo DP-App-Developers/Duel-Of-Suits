@@ -42,7 +42,10 @@ data class GameState(
     val animating: Boolean = false,
     val tableClearing: Boolean = false,
     // Pre-reserves table rows so the board can animate to the correct size before cards fly in.
-    val reservedSlotCount: Int = 0
+    val reservedSlotCount: Int = 0,
+    // Fractional scale of board cards relative to hand-card size (1.0 = same as hand).
+    // Shrinks by ×0.75 each time the board needs more space than is available.
+    val boardScale: Float = 1.0f
 ) {
     val otherIndices: List<Int> get() = (0 until playerCount).filter { it != attackerIndex && it != defenderIndex }
     val otherIndex: Int get() = otherIndices.firstOrNull() ?: -1

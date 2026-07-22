@@ -45,19 +45,12 @@ import com.dehong.duelofSuits.ui.theme.HighlightCyan
 import com.dehong.duelofSuits.ui.theme.HighlightCyanOverlay
 
 // Each slot = attack card + defense-card offset stacked diagonally.
-// slotWidth  = cardWidth  * (54 + 20) / 54 = cardWidth  * 74/54
-// slotHeight = cardHeight * (78 + 16) / 78 = cardHeight * 94/78
-// Inverting (via aspect ratio cardHeight = cardWidth * 78/54):
-//   cardWidth from slot width  = slotWidth  * 54/74
-//   cardWidth from slot height = slotHeight * 54/94
-private const val CARD_W_FROM_SLOT_W = 54f / 74f
-private const val CARD_W_FROM_SLOT_H = 54f / 94f
-private const val DEFENSE_X_RATIO   = 20f / 54f
-private const val DEFENSE_Y_RATIO   = 16f / 78f
-private const val ASPECT_RATIO      = 78f / 54f   // cardHeight / cardWidth
+// slotWidth = cardWidth * 74/54  (card + 20px diagonal offset)
+private const val SLOT_W_RATIO     = 74f / 54f
+private const val DEFENSE_X_RATIO  = 20f / 54f
+private const val DEFENSE_Y_RATIO  = 16f / 78f
+private const val ASPECT_RATIO     = 78f / 54f   // cardHeight / cardWidth
 
-// Minimum column count; actual count grows to fill available width at hand-card size.
-internal const val MIN_COLS = 4
 private val COL_GAP = 18.dp
 private val ROW_GAP = 14.dp
 
@@ -66,11 +59,10 @@ fun GameTable(
     state: GameState,
     registry: PositionRegistry,
     onDefenseSlotTapped: (Int) -> Unit,
-    onNumColsChanged: (Int) -> Unit = {},
+    // Reports (numCols, maxRowsInArea) so the ViewModel can compute total board capacity.
+    onGridChanged: (numCols: Int, maxRows: Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
-    // Global card width (= hand card size) drives both draw-pile reservation and the
-    // board-card size cap so board cards are never larger than hand cards.
     val globalCardWidth  = LocalCardWidth.current
     val drawPileReserved = globalCardWidth * 1.5f + 8.dp
 
@@ -87,30 +79,28 @@ fun GameTable(
         contentAlignment = Alignment.Center
     ) {
         val gridWidth  = maxWidth - drawPileReserved
-        // Guard against unconstrained height (should not occur given weight(0.40f) on CenterPanel).
-        val gridHeight = if (maxHeight.value.isInfinite()) globalCardWidth * ASPECT_RATIO * 2.6f
+        val gridHeight = if (maxHeight.value.isInfinite()) globalCardWidth * ASPECT_RATIO * 3f
                          else maxHeight
 
-        // How many columns fit at the global (hand) card size? At least MIN_COLS.
-        val globalSlotWidth = globalCardWidth * (74f / 54f)
-        val numCols = ((gridWidth + COL_GAP) / (globalSlotWidth + COL_GAP))
-            .toInt()
-            .coerceAtLeast(MIN_COLS)
+        // boardScale drives card size. At 1.0 cards equal hand size; shrinks by ×0.75 as needed.
+        val scaledCardWidth  = globalCardWidth * state.boardScale
+        val scaledSlotWidth  = scaledCardWidth * SLOT_W_RATIO
+        // slotHeight includes the diagonal defense-card offset below the attack card.
+        val scaledSlotHeight = scaledCardWidth * ASPECT_RATIO * (1f + DEFENSE_Y_RATIO)
 
-        // Report numCols whenever it changes so the ViewModel can sequence animations.
-        LaunchedEffect(numCols) { onNumColsChanged(numCols) }
+        // How many columns fit horizontally and rows fit vertically at the current scale?
+        val numCols = ((gridWidth  + COL_GAP) / (scaledSlotWidth  + COL_GAP))
+            .toInt().coerceAtLeast(1)
+        val maxRowsInArea = ((gridHeight + ROW_GAP) / (scaledSlotHeight + ROW_GAP))
+            .toInt().coerceAtLeast(1)
+
+        // Report to ViewModel whenever layout capacity changes.
+        LaunchedEffect(numCols, maxRowsInArea) { onGridChanged(numCols, maxRowsInArea) }
 
         val numRows = if (effectiveSlotCount == 0) 1
                       else (effectiveSlotCount + numCols - 1) / numCols
 
-        // Slot dimensions that tile the available area across numCols × numRows.
-        val slotWidth  = (gridWidth  - COL_GAP * (numCols - 1)) / numCols
-        val slotHeight = (gridHeight - ROW_GAP  * (numRows  - 1)) / numRows
-
-        // Tightest constraint wins; cap at global card size so board ≤ hand.
-        val targetCardWidth = minOf(slotWidth * CARD_W_FROM_SLOT_W, slotHeight * CARD_W_FROM_SLOT_H)
-            .coerceAtMost(globalCardWidth)
-            .coerceAtLeast(8.dp)
+        val targetCardWidth = scaledCardWidth.coerceAtLeast(8.dp)
 
         val animatedW by animateFloatAsState(
             targetValue   = targetCardWidth.value,

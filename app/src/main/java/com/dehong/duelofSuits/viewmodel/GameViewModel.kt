@@ -50,12 +50,14 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    // Tracks the column count computed by GameTable so animation sequencing uses the real value.
+    // Grid dimensions reported by GameTable so animation sequencing uses real layout values.
     private val _boardNumCols = MutableStateFlow(4)
     val boardNumCols: StateFlow<Int> = _boardNumCols.asStateFlow()
+    private val _boardMaxRows = MutableStateFlow(2)
 
-    fun updateBoardNumCols(cols: Int) {
+    fun updateBoardGrid(cols: Int, maxRows: Int) {
         if (_boardNumCols.value != cols) _boardNumCols.value = cols
+        if (_boardMaxRows.value != maxRows) _boardMaxRows.value = maxRows
     }
 
     init {
@@ -286,7 +288,7 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
                     _gameState.value = state.copy(players = newState.players, selectedCards = emptySet(), animating = true)
                     emitPlayCardAnimations(selected, 0, state.tableSlots.size)
                     delay(500L)
-                    val finalState = newState.copy(animating = false, reservedSlotCount = 0)
+                    val finalState = newState.copy(animating = false, reservedSlotCount = 0, boardScale = _gameState.value.boardScale)
                     if (checkAndApplyImmediateWin(finalState)) return@launch
                     _gameState.value = finalState
                     checkAndRunAiTurn()
@@ -301,7 +303,7 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
                     _gameState.value = state.copy(players = newState.players, selectedCards = emptySet(), animating = true)
                     emitPlayCardAnimations(selected, 0, state.tableSlots.size)
                     delay(500L)
-                    val finalState = newState.copy(animating = false, reservedSlotCount = 0)
+                    val finalState = newState.copy(animating = false, reservedSlotCount = 0, boardScale = _gameState.value.boardScale)
                     if (checkAndApplyImmediateWin(finalState)) return@launch
                     _gameState.value = finalState
                     checkAndRunAiTurn()
@@ -456,7 +458,7 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
         _gameState.value = currentState.copy(players = newState.players, selectedCards = emptySet(), animating = true)
         emitPlayCardAnimations(cards, attackerIdx, currentState.tableSlots.size)
         delay(500L)
-        val finalState = newState.copy(animating = false, reservedSlotCount = 0)
+        val finalState = newState.copy(animating = false, reservedSlotCount = 0, boardScale = _gameState.value.boardScale)
         if (checkAndApplyImmediateWin(finalState)) return
         _gameState.value = finalState
 
@@ -495,7 +497,7 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
             _gameState.value = currentState.copy(players = newState.players, selectedCards = emptySet(), animating = true)
             emitPlayCardAnimations(cards, playerIdx, currentState.tableSlots.size)
             delay(500L)
-            val finalState = newState.copy(animating = false, reservedSlotCount = 0)
+            val finalState = newState.copy(animating = false, reservedSlotCount = 0, boardScale = _gameState.value.boardScale)
             if (checkAndApplyImmediateWin(finalState)) return
             _gameState.value = finalState
             delay(300L)
@@ -549,7 +551,7 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
     private suspend fun resolveSuccessfulDefenseFlow(state: GameState) {
         _gameState.value = state.copy(tableClearing = true)
         delay(750L)
-        val resolvedState = GameEngine.resolveSuccessfulDefense(state)
+        val resolvedState = GameEngine.resolveSuccessfulDefense(state).copy(boardScale = 1.0f)
         _gameState.value = resolvedState
 
         val replenishedState = GameEngine.replenish(resolvedState)
@@ -579,7 +581,7 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
         delay(1000L)
         _animationEvents.emit(AnimationEvent.TableToPlayer(state.defenderIndex, allCards))
         delay(500L)
-        var newState = GameEngine.resolveFailedDefense(state)
+        var newState = GameEngine.resolveFailedDefense(state).copy(boardScale = 1.0f)
 
         // Replenish after failed defense: draw in clockwise order from old attacker
         val drawOrder = (0 until state.playerCount).map { (state.attackerIndex + it) % state.playerCount }
@@ -613,17 +615,33 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
 
     // ── Animation Helpers ───────────────────────────────────────────────────
 
-    // Emits flying-card events one by one (200 ms apart). If the new cards require an extra row,
-    // first reserves the slots so the board can animate to the new size, then waits for the
-    // resize to finish before the first card event is emitted.
+    // Emits flying-card events one by one (200 ms apart).
+    // Before animating, ensures the board has enough empty cells by shrinking card scale (×0.75)
+    // until space is available. Each shrink waits for the smooth resize animation to finish.
+    // If the cards would overflow into a new row, that row is pre-reserved so slot positions
+    // are registered before the flying-card animation begins.
     private suspend fun emitPlayCardAnimations(cards: List<Card>, playerIdx: Int, startSlotIdx: Int) {
-        val numCols = _boardNumCols.value.coerceAtLeast(1)
+        var numCols = _boardNumCols.value.coerceAtLeast(1)
+
+        // Shrink board scale until there are enough empty cells for the incoming cards.
+        var emptyCells = computeEmptyCells(startSlotIdx, numCols)
+        while (emptyCells < cards.size && _gameState.value.boardScale > 0.05f) {
+            val newScale = _gameState.value.boardScale * 0.75f
+            _gameState.value = _gameState.value.copy(boardScale = newScale)
+            delay(RESIZE_ANIM_WAIT_MS)
+            numCols = _boardNumCols.value.coerceAtLeast(1)
+            emptyCells = computeEmptyCells(startSlotIdx, numCols)
+        }
+
+        // If cards spill into a new row, pre-reserve those slots so their positions are
+        // registered before the fly animations fire.
         val oldRows = rowsNeeded(startSlotIdx, numCols)
         val newRows = rowsNeeded(startSlotIdx + cards.size, numCols)
         if (newRows > oldRows) {
             _gameState.value = _gameState.value.copy(reservedSlotCount = startSlotIdx + cards.size)
             delay(RESIZE_ANIM_WAIT_MS)
         }
+
         cards.forEachIndexed { i, card ->
             if (i > 0) delay(200L)
             _animationEvents.emit(
@@ -634,6 +652,14 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
                 )
             )
         }
+    }
+
+    private fun computeEmptyCells(existingSlots: Int, numCols: Int): Int {
+        // Use the actual available rows in the board area (reported by GameTable),
+        // not just the minimum rows to hold existing cards. This way resize only fires
+        // when the board is genuinely full, not just because a new row would be needed.
+        val maxRows = _boardMaxRows.value.coerceAtLeast(1)
+        return numCols * maxRows - existingSlots
     }
 
     private fun rowsNeeded(slotCount: Int, numCols: Int): Int =

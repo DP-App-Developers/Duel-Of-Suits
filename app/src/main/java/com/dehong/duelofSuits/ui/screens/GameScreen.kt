@@ -356,7 +356,7 @@ private fun GameLayout(
                     state = state,
                     registry = registry,
                     onDefenseSlotTapped = if (state.tableClearing) { _ -> } else viewModel::onDefenseSlotTapped,
-                    onNumColsChanged = viewModel::updateBoardNumCols,
+                    onGridChanged = viewModel::updateBoardGrid,
                     modifier = tableModifier
                 )
             }
