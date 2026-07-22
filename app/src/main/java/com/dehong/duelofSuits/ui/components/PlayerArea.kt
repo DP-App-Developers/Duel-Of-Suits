@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
@@ -382,7 +383,8 @@ fun AiTopArea(
     Column(
         modifier = modifier
             .fillMaxHeight()
-            .padding(horizontal = 4.dp),
+            .padding(horizontal = 4.dp)
+            .clipToBounds(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
@@ -391,7 +393,8 @@ fun AiTopArea(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(cardHeight),
+                .height(cardHeight)
+                .offset(y = -(cardHeight * 0.2f)),
             contentAlignment = Alignment.TopCenter
         ) {
             Box(
