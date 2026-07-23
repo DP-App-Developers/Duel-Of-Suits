@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">對花(八張)</string>
+
+    <!-- Home Screen -->
+    <string name="home_title">對花(八張)</string>
+    <string name="home_ornament_diamond">♦</string>
+    <string name="home_subtitle">攻防對決卡牌遊戲</string>
+    <string name="home_choose_difficulty">選擇難度</string>
+    <string name="home_difficulty_normal">普通</string>
+    <string name="home_difficulty_hard">困難</string>
+    <string name="home_choose_players">選擇玩家人數</string>
+    <string name="home_player_singular">玩家</string>
+    <string name="home_player_plural">玩家</string>
+
+    <!-- Game Over Overlay -->
+    <string name="game_over_victory">勝利</string>
+    <string name="game_over_defeated">失敗</string>
+    <string name="game_over_play_again">再玩一次</string>
+    <string name="game_over_home">首頁</string>
+
+    <!-- Action Buttons -->
+    <string name="action_attack">攻擊</string>
+    <string name="action_throw_in">跟牌</string>
+    <string name="action_pass">跳過</string>
+    <string name="action_take_cards">收牌</string>
+
+    <!-- Speech Bubbles -->
+    <string name="bubble_ill_start">我先開始</string>
+    <string name="bubble_pass">跳過</string>
+    <string name="bubble_take">收牌</string>
+    <string name="bubble_joker_only">隨機抽三張牌，我只有鬼牌！</string>
+
+    <!-- Role Labels (title case; RolePill applies uppercase() itself) -->
+    <string name="role_attacker">攻擊方</string>
+    <string name="role_defender">防守方</string>
+
+    <!-- Card Labels -->
+    <string name="card_joker_emoji">🃏</string>
+    <string name="card_joker">鬼牌</string>
+
+    <!-- Error / Validation Messages (shown in Snackbar) -->
+    <string name="error_joker_cannot_attack">鬼牌不能用來攻擊</string>
+    <string name="error_same_rank_required">所有攻擊牌必須是相同點數</string>
+    <string name="error_max_four_cards">一次最多可出 4 張牌</string>
+    <string name="error_too_many_attack_cards">攻擊牌太多（防守方有 %1$d 張手牌）</string>
+    <string name="error_joker_cannot_throw_in">鬼牌不能跟牌</string>
+    <string name="error_thrown_must_match_rank">跟出的牌必須與桌上的點數相同</string>
+    <string name="error_too_many_throw_in_cards">牌太多（防守者在本回合開始時有 %1$d 張手牌）</string>
+    <string name="error_card_must_match_table_rank">此牌必須與桌上已有的點數相同</string>
+    <string name="error_card_cannot_defend_any">這張牌無法防守任何攻擊牌</string>
+    <string name="error_card_cannot_defend_that">這張牌無法防守這張攻擊牌</string>
+</resources>
