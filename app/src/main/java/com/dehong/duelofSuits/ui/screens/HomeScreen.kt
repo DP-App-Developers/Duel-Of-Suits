@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,6 +41,11 @@ import com.dehong.duelofSuits.ui.theme.TableGreen
 import com.dehong.duelofSuits.ui.theme.TableGreenLight
 import com.dehong.duelofSuits.ui.theme.TextOnDark
 
+private val difficultyLabels = mapOf(
+    Difficulty.NORMAL to R.string.home_difficulty_normal,
+    Difficulty.HARD to R.string.home_difficulty_hard,
+)
+
 @Composable
 fun HomeScreen(onStartGame: (Int, Difficulty) -> Unit) {
     var difficulty by remember { mutableStateOf(Difficulty.NORMAL) }
@@ -45,9 +53,7 @@ fun HomeScreen(onStartGame: (Int, Difficulty) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.radialGradient(listOf(TableGreenLight, TableGreen))
-            )
+            .background(Brush.radialGradient(listOf(TableGreenLight, TableGreen)))
             .drawBehind {
                 val lineColor = Color.Black.copy(alpha = 0.05f)
                 val spacing = 5.dp.toPx()
@@ -104,17 +110,33 @@ fun HomeScreen(onStartGame: (Int, Difficulty) -> Unit) {
                 letterSpacing = 0.5.sp
             )
             Spacer(modifier = Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                DifficultyButton(
-                    label = stringResource(R.string.home_difficulty_normal),
-                    isSelected = difficulty == Difficulty.NORMAL,
-                    onClick = { difficulty = Difficulty.NORMAL }
-                )
-                DifficultyButton(
-                    label = stringResource(R.string.home_difficulty_hard),
-                    isSelected = difficulty == Difficulty.HARD,
-                    onClick = { difficulty = Difficulty.HARD }
-                )
+
+            val segmentedColors = SegmentedButtonDefaults.colors(
+                activeContainerColor = Color(0xFF1A5235),
+                activeContentColor = Gold,
+                activeBorderColor = Gold.copy(alpha = 0.85f),
+                inactiveContainerColor = Color(0xFF061510),
+                inactiveContentColor = Gold.copy(alpha = 0.4f),
+                inactiveBorderColor = Gold.copy(alpha = 0.3f),
+            )
+
+            SingleChoiceSegmentedButtonRow {
+                Difficulty.entries.forEachIndexed { index, diff ->
+                    SegmentedButton(
+                        selected = difficulty == diff,
+                        onClick = { difficulty = diff },
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = Difficulty.entries.size),
+                        colors = segmentedColors,
+                        label = {
+                            Text(
+                                text = stringResource(difficultyLabels.getValue(diff)),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.sp
+                            )
+                        }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -133,47 +155,6 @@ fun HomeScreen(onStartGame: (Int, Difficulty) -> Unit) {
                 PlayerCountButton(count = 4, onStartGame = { onStartGame(it, difficulty) })
             }
         }
-    }
-}
-
-@Composable
-private fun DifficultyButton(label: String, isSelected: Boolean, onClick: () -> Unit) {
-    val borderAlpha = if (isSelected) 0.9f else 0.3f
-    val textAlpha = if (isSelected) 1f else 0.4f
-    val bgColors = if (isSelected) {
-        listOf(Color(0xFF1A5235), Color(0xFF0A2418))
-    } else {
-        listOf(Color(0xFF0F3020), Color(0xFF061510))
-    }
-
-    Box(
-        modifier = Modifier
-            .background(
-                Brush.verticalGradient(bgColors),
-                RoundedCornerShape(10.dp)
-            )
-            .drawBehind {
-                val stroke = 1.5.dp.toPx()
-                val r = 10.dp.toPx()
-                drawRoundRect(
-                    color = Gold.copy(alpha = borderAlpha),
-                    topLeft = Offset(stroke / 2, stroke / 2),
-                    size = Size(size.width - stroke, size.height - stroke),
-                    cornerRadius = CornerRadius(r),
-                    style = Stroke(stroke)
-                )
-            }
-            .clickable(onClick = onClick)
-            .padding(horizontal = 28.dp, vertical = 14.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            color = Gold.copy(alpha = textAlpha),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.5.sp
-        )
     }
 }
 
