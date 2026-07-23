@@ -50,7 +50,7 @@ import com.dehong.duelofSuits.ui.theme.HighlightCyanOverlay
 import com.dehong.duelofSuits.ui.theme.SelectedBorder
 
 val CARD_WIDTH  = 54.dp
-val CARD_HEIGHT = 78.dp
+val CARD_HEIGHT = (CARD_WIDTH.value * 1.4f).dp
 
 val LocalCardWidth  = compositionLocalOf { CARD_WIDTH }
 val LocalCardHeight = compositionLocalOf { CARD_HEIGHT }

@@ -521,7 +521,7 @@ private fun estimateAttackSlotOffset(
     if (slot0 != Offset.Zero) {
         val col         = slotIndex % numCols
         val row         = slotIndex / numCols
-        val cardHeight  = cardWidth * (78f / 54f)
+        val cardHeight  = cardWidth * 1.4f
         val defenseY    = cardWidth * (16f / 54f)
         val rowOffsetPx = with(density) { (cardHeight + defenseY + 8.dp).toPx() }
         return Offset(slot0.x + col * slotStepPx, slot0.y + row * rowOffsetPx)

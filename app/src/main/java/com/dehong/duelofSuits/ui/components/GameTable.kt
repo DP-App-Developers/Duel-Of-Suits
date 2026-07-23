@@ -49,7 +49,7 @@ import com.dehong.duelofSuits.ui.theme.HighlightCyanOverlay
 private const val SLOT_W_RATIO     = 74f / 54f
 private const val DEFENSE_X_RATIO  = 20f / 54f
 private const val DEFENSE_Y_RATIO  = 16f / 78f
-private const val ASPECT_RATIO     = 78f / 54f   // cardHeight / cardWidth
+private const val ASPECT_RATIO     = 1.4f         // cardHeight / cardWidth
 
 private val COL_GAP = 18.dp
 private val ROW_GAP = 14.dp
