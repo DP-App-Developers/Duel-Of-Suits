@@ -19,12 +19,14 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
@@ -49,9 +51,23 @@ private val difficultyLabels = mapOf(
     Difficulty.HARD to R.string.home_difficulty_hard,
 )
 
+private const val PREFS_NAME = "duelofSuits_prefs"
+private const val KEY_DIFFICULTY = "difficulty"
+
 @Composable
 fun HomeScreen(onStartGame: (Int, Difficulty) -> Unit) {
-    var difficulty by remember { mutableStateOf(Difficulty.NORMAL) }
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
+
+    var difficulty by remember {
+        val saved = prefs.getString(KEY_DIFFICULTY, null)
+        mutableStateOf(if (saved != null) Difficulty.valueOf(saved) else Difficulty.NORMAL)
+    }
+
+    val onDifficultyChange: (Difficulty) -> Unit = { diff ->
+        difficulty = diff
+        prefs.edit().putString(KEY_DIFFICULTY, diff.name).apply()
+    }
 
     Box(
         modifier = Modifier
@@ -77,13 +93,13 @@ fun HomeScreen(onStartGame: (Int, Difficulty) -> Unit) {
             if (maxWidth > maxHeight) {
                 LandscapeLayout(
                     difficulty = difficulty,
-                    onDifficultyChange = { difficulty = it },
+                    onDifficultyChange = onDifficultyChange,
                     onStartGame = { onStartGame(it, difficulty) }
                 )
             } else {
                 PortraitLayout(
                     difficulty = difficulty,
-                    onDifficultyChange = { difficulty = it },
+                    onDifficultyChange = onDifficultyChange,
                     onStartGame = { onStartGame(it, difficulty) }
                 )
             }
