@@ -38,13 +38,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.TransformOrigin
@@ -351,13 +351,12 @@ private fun GameLayout(
                 modifier = Modifier.weight(1f).fillMaxHeight().padding(vertical = 6.dp),
                 contentAlignment = Alignment.Center
             ) {
-                val tableModifier = if (state.tableClearing) Modifier.alpha(tableAlpha.value) else Modifier
                 GameTable(
                     state = state,
                     registry = registry,
                     onDefenseSlotTapped = if (state.tableClearing) { _ -> } else viewModel::onDefenseSlotTapped,
                     onGridChanged = viewModel::updateBoardGrid,
-                    modifier = tableModifier
+                    modifier = Modifier.graphicsLayer { alpha = tableAlpha.value }
                 )
             }
 
@@ -489,20 +488,19 @@ private fun SpeechBubbleLayer(
 @Composable
 private fun FlyingCardLayer(flyingCards: List<FlyingCard>) {
     flyingCards.forEach { flying ->
-        val offset = flying.animatable.value
-        CardView(
-            card = flying.card,
-            faceDown = flying.faceDown,
-            modifier = Modifier
-                .zIndex(10f)
-                .offset {
-                    IntOffset(
-                        offset.x.roundToInt(),
-                        offset.y.roundToInt()
-                    )
-                }
-                .graphicsLayer { rotationZ = flying.rotation }
-        )
+        key(flying.id) {
+            CardView(
+                card = flying.card,
+                faceDown = flying.faceDown,
+                modifier = Modifier
+                    .zIndex(10f)
+                    .offset {
+                        val o = flying.animatable.value
+                        IntOffset(o.x.roundToInt(), o.y.roundToInt())
+                    }
+                    .graphicsLayer { rotationZ = flying.rotation }
+            )
+        }
     }
 }
 
