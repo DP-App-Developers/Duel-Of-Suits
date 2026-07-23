@@ -4,10 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -70,98 +73,177 @@ fun HomeScreen(onStartGame: (Int, Difficulty) -> Unit) {
             },
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(0.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.home_title),
-                color = Gold,
-                fontSize = 36.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 3.sp
-            )
-
-            Spacer(Modifier.height(10.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Box(Modifier.width(60.dp).height(1.dp).background(Gold.copy(alpha = 0.45f)))
-                Text(stringResource(R.string.home_ornament_diamond), color = Gold.copy(alpha = 0.7f), fontSize = 13.sp)
-                Box(Modifier.width(60.dp).height(1.dp).background(Gold.copy(alpha = 0.45f)))
-            }
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                text = stringResource(R.string.home_subtitle),
-                color = TextOnDark.copy(alpha = 0.45f),
-                fontSize = 10.sp,
-                letterSpacing = 2.sp
-            )
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            Text(
-                text = stringResource(R.string.home_choose_difficulty),
-                color = TextOnDark.copy(alpha = 0.65f),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.5.sp
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            val segmentedColors = SegmentedButtonDefaults.colors(
-                activeContainerColor = Color(0xFF1A5235),
-                activeContentColor = Gold,
-                activeBorderColor = Gold.copy(alpha = 0.85f),
-                inactiveContainerColor = Color(0xFF061510),
-                inactiveContentColor = Gold.copy(alpha = 0.4f),
-                inactiveBorderColor = Gold.copy(alpha = 0.3f),
-            )
-
-            SingleChoiceSegmentedButtonRow {
-                Difficulty.entries.forEachIndexed { index, diff ->
-                    SegmentedButton(
-                        selected = difficulty == diff,
-                        onClick = { difficulty = diff },
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = Difficulty.entries.size),
-                        colors = segmentedColors,
-                        label = {
-                            Text(
-                                text = stringResource(difficultyLabels.getValue(diff)),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
-                            )
-                        }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Text(
-                text = stringResource(R.string.home_choose_players),
-                color = TextOnDark.copy(alpha = 0.65f),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.5.sp
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                PlayerCountButton(count = 2, onStartGame = { onStartGame(it, difficulty) })
-                PlayerCountButton(count = 3, onStartGame = { onStartGame(it, difficulty) })
-                PlayerCountButton(count = 4, onStartGame = { onStartGame(it, difficulty) })
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            if (maxWidth > maxHeight) {
+                LandscapeLayout(
+                    difficulty = difficulty,
+                    onDifficultyChange = { difficulty = it },
+                    onStartGame = { onStartGame(it, difficulty) }
+                )
+            } else {
+                PortraitLayout(
+                    difficulty = difficulty,
+                    onDifficultyChange = { difficulty = it },
+                    onStartGame = { onStartGame(it, difficulty) }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun PlayerCountButton(count: Int, onStartGame: (Int) -> Unit) {
-    Box(
+private fun PortraitLayout(
+    difficulty: Difficulty,
+    onDifficultyChange: (Difficulty) -> Unit,
+    onStartGame: (Int) -> Unit
+) {
+    Column(
         modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        TitleBlock()
+        Spacer(modifier = Modifier.height(32.dp))
+        DifficultySection(difficulty, onDifficultyChange)
+        Spacer(modifier = Modifier.height(24.dp))
+        PlayerCountSection(onStartGame)
+    }
+}
+
+@Composable
+private fun LandscapeLayout(
+    difficulty: Difficulty,
+    onDifficultyChange: (Difficulty) -> Unit,
+    onStartGame: (Int) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 32.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(32.dp)
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            TitleBlock()
+        }
+        Box(
+            modifier = Modifier
+                .width(1.dp)
+                .fillMaxHeight(0.65f)
+                .background(Gold.copy(alpha = 0.25f))
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically)
+        ) {
+            DifficultySection(difficulty, onDifficultyChange)
+            PlayerCountSection(onStartGame)
+        }
+    }
+}
+
+@Composable
+private fun TitleBlock() {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = stringResource(R.string.home_title),
+            color = Gold,
+            fontSize = 36.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 3.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(Modifier.width(60.dp).height(1.dp).background(Gold.copy(alpha = 0.45f)))
+            Text(stringResource(R.string.home_ornament_diamond), color = Gold.copy(alpha = 0.7f), fontSize = 13.sp)
+            Box(Modifier.width(60.dp).height(1.dp).background(Gold.copy(alpha = 0.45f)))
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = stringResource(R.string.home_subtitle),
+            color = TextOnDark.copy(alpha = 0.45f),
+            fontSize = 10.sp,
+            letterSpacing = 2.sp
+        )
+    }
+}
+
+@Composable
+private fun DifficultySection(difficulty: Difficulty, onDifficultyChange: (Difficulty) -> Unit) {
+    val segmentedColors = SegmentedButtonDefaults.colors(
+        activeContainerColor = Color(0xFF1A5235),
+        activeContentColor = Gold,
+        activeBorderColor = Gold.copy(alpha = 0.85f),
+        inactiveContainerColor = Color(0xFF061510),
+        inactiveContentColor = Gold.copy(alpha = 0.4f),
+        inactiveBorderColor = Gold.copy(alpha = 0.3f),
+    )
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = stringResource(R.string.home_choose_difficulty),
+            color = TextOnDark.copy(alpha = 0.65f),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            letterSpacing = 0.5.sp
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            Difficulty.entries.forEachIndexed { index, diff ->
+                SegmentedButton(
+                    selected = difficulty == diff,
+                    onClick = { onDifficultyChange(diff) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = Difficulty.entries.size),
+                    colors = segmentedColors,
+                    label = {
+                        Text(
+                            text = stringResource(difficultyLabels.getValue(diff)),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlayerCountSection(onStartGame: (Int) -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = stringResource(R.string.home_choose_players),
+            color = TextOnDark.copy(alpha = 0.65f),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            letterSpacing = 0.5.sp
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            PlayerCountButton(count = 2, modifier = Modifier.weight(1f), onStartGame = onStartGame)
+            PlayerCountButton(count = 3, modifier = Modifier.weight(1f), onStartGame = onStartGame)
+            PlayerCountButton(count = 4, modifier = Modifier.weight(1f), onStartGame = onStartGame)
+        }
+    }
+}
+
+@Composable
+private fun PlayerCountButton(count: Int, modifier: Modifier = Modifier, onStartGame: (Int) -> Unit) {
+    Box(
+        modifier = modifier
             .background(
                 Brush.verticalGradient(listOf(Color(0xFF1A5235), Color(0xFF0A2418))),
                 RoundedCornerShape(12.dp)
@@ -178,7 +260,7 @@ private fun PlayerCountButton(count: Int, onStartGame: (Int) -> Unit) {
                 )
             }
             .clickable { onStartGame(count) }
-            .padding(horizontal = 28.dp, vertical = 22.dp),
+            .padding(horizontal = 16.dp, vertical = 18.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -188,12 +270,12 @@ private fun PlayerCountButton(count: Int, onStartGame: (Int) -> Unit) {
             Text(
                 text = "$count",
                 color = Gold,
-                fontSize = 42.sp,
+                fontSize = 36.sp,
                 fontWeight = FontWeight.ExtraBold
             )
             Spacer(Modifier.height(4.dp))
-            Box(Modifier.width(36.dp).height(1.dp).background(Gold.copy(alpha = 0.35f)))
-            Spacer(Modifier.height(6.dp))
+            Box(Modifier.width(32.dp).height(1.dp).background(Gold.copy(alpha = 0.35f)))
+            Spacer(Modifier.height(5.dp))
             Text(
                 text = if (count == 1) stringResource(R.string.home_player_singular) else stringResource(R.string.home_player_plural),
                 color = TextOnDark.copy(alpha = 0.8f),
