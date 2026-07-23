@@ -13,6 +13,7 @@ import com.dehong.duelofSuits.game.ThrowInError
 import com.dehong.duelofSuits.model.Card
 import com.dehong.duelofSuits.model.CardSelectionState
 import com.dehong.duelofSuits.model.Deck
+import com.dehong.duelofSuits.model.Difficulty
 import com.dehong.duelofSuits.model.GamePhase
 import com.dehong.duelofSuits.model.GameState
 import com.dehong.duelofSuits.model.Player
@@ -31,7 +32,13 @@ import kotlinx.coroutines.launch
 // resize animation (tween 350ms) finishes before cards start moving.
 private const val RESIZE_ANIM_WAIT_MS = 400L
 
-class GameViewModel(application: Application, private val playerCount: Int = 3) : AndroidViewModel(application) {
+class GameViewModel(
+    application: Application,
+    private val playerCount: Int = 3,
+    private val difficulty: Difficulty = Difficulty.NORMAL
+) : AndroidViewModel(application) {
+
+    private val hardMode get() = difficulty == Difficulty.HARD
 
     private val _gameState = MutableStateFlow(createInitialState())
     val gameState: StateFlow<GameState> = _gameState.asStateFlow()
@@ -442,7 +449,7 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
             currentState = _gameState.value
         }
 
-        val cards = AiPlayer.decideAttackFromState(currentState, attackerIdx)
+        val cards = AiPlayer.decideAttackFromState(currentState, attackerIdx, hardMode)
         if (cards.isEmpty()) {
             _gameState.value = GameEngine.skipAttackerRound(currentState)
             delay(600L)
@@ -484,7 +491,7 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
             return
         }
 
-        val cards = AiPlayer.decideThrowInFromState(currentState, playerIdx)
+        val cards = AiPlayer.decideThrowInFromState(currentState, playerIdx, hardMode)
         if (cards.isEmpty()) {
             val newState = GameEngine.processPass(playerIdx, currentState)
             _gameState.value = newState
@@ -509,7 +516,7 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
         val defenderIdx = state.defenderIndex
         if (defenderIdx == 0) return
 
-        val defenseMap = AiPlayer.decideDefenseFromState(state)
+        val defenseMap = AiPlayer.decideDefenseFromState(state, hardMode)
         if (defenseMap == null) {
             delay(400L)
             resolveFailedDefenseFlow(state)
@@ -716,9 +723,13 @@ class GameViewModel(application: Application, private val playerCount: Int = 3) 
     }
 }
 
-class GameViewModelFactory(private val application: Application, private val playerCount: Int) : ViewModelProvider.Factory {
+class GameViewModelFactory(
+    private val application: Application,
+    private val playerCount: Int,
+    private val difficulty: Difficulty = Difficulty.NORMAL
+) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return GameViewModel(application, playerCount) as T
+        return GameViewModel(application, playerCount, difficulty) as T
     }
 }

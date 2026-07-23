@@ -13,6 +13,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.dehong.duelofSuits.model.Difficulty
 import com.dehong.duelofSuits.ui.screens.GameScreen
 import com.dehong.duelofSuits.ui.screens.HomeScreen
 import com.dehong.duelofSuits.ui.theme.DuelOfSuitsTheme
@@ -20,7 +21,7 @@ import com.dehong.duelofSuits.viewmodel.GameViewModelFactory
 
 sealed class AppScreen {
     object Home : AppScreen()
-    data class Game(val playerCount: Int, val sessionId: Int) : AppScreen()
+    data class Game(val playerCount: Int, val difficulty: Difficulty, val sessionId: Int) : AppScreen()
 }
 
 class MainActivity : ComponentActivity() {
@@ -42,16 +43,16 @@ class MainActivity : ComponentActivity() {
 
             DuelOfSuitsTheme {
                 when (val screen = currentScreen) {
-                    AppScreen.Home -> HomeScreen(onStartGame = { count ->
+                    AppScreen.Home -> HomeScreen(onStartGame = { count, diff ->
                         sessionId++
-                        currentScreen = AppScreen.Game(count, sessionId)
+                        currentScreen = AppScreen.Game(count, diff, sessionId)
                     })
                     is AppScreen.Game -> GameScreen(
                         playerCount = screen.playerCount,
                         onNavigateHome = { currentScreen = AppScreen.Home },
                         viewModel = viewModel(
-                            factory = GameViewModelFactory(application, screen.playerCount),
-                            key = "game_${screen.playerCount}_${screen.sessionId}"
+                            factory = GameViewModelFactory(application, screen.playerCount, screen.difficulty),
+                            key = "game_${screen.playerCount}_${screen.difficulty}_${screen.sessionId}"
                         )
                     )
                 }

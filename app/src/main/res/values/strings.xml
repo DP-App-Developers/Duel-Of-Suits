@@ -6,6 +6,9 @@
     <string name="home_title">DUEL OF SUITS</string>
     <string name="home_ornament_diamond">♦</string>
     <string name="home_subtitle">A GAME OF ATTACK AND DEFENSE</string>
+    <string name="home_choose_difficulty">Choose difficulty</string>
+    <string name="home_difficulty_normal">NORMAL</string>
+    <string name="home_difficulty_hard">HARD</string>
     <string name="home_choose_players">Choose number of players</string>
     <string name="home_player_singular">Player</string>
     <string name="home_player_plural">Players</string>
