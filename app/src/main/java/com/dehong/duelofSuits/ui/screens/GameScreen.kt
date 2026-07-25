@@ -152,7 +152,7 @@ fun GameScreen(
     }
 
     val config = LocalConfiguration.current
-    val cardWidth  = minOf(config.screenWidthDp / 12f, config.screenHeightDp / 5f / 1.14f).dp // also check height so the cards won't overflow on short/wide screens
+    val cardWidth  = minOf(config.screenWidthDp / 12f, config.screenHeightDp / 4f / 1.4f).dp // also check height so the cards won't overflow on short/wide screens
     val cardHeight = cardWidth * (CARD_HEIGHT.value / CARD_WIDTH.value)
     val density = LocalDensity.current
 
