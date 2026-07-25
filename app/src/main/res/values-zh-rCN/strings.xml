@@ -13,6 +13,11 @@
     <string name="home_player_singular">玩家</string>
     <string name="home_player_plural">玩家</string>
 
+    <!-- Rules Screen -->
+    <string name="rules_title">游戏规则</string>
+    <string name="rules_subtitle">说明 &amp; 指南</string>
+    <string name="rules_back">← 返回</string>
+
     <!-- Game Over Overlay -->
     <string name="game_over_victory">胜利</string>
     <string name="game_over_defeated">失败</string>

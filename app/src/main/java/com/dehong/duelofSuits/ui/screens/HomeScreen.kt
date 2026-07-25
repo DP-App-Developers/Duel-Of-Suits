@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -55,7 +57,7 @@ private const val PREFS_NAME = "duelofSuits_prefs"
 private const val KEY_DIFFICULTY = "difficulty"
 
 @Composable
-fun HomeScreen(onStartGame: (Int, Difficulty) -> Unit) {
+fun HomeScreen(onStartGame: (Int, Difficulty) -> Unit, onShowRules: () -> Unit) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
 
@@ -103,6 +105,33 @@ fun HomeScreen(onStartGame: (Int, Difficulty) -> Unit) {
                     onStartGame = { onStartGame(it, difficulty) }
                 )
             }
+        }
+
+        // Rules button
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(14.dp)
+                .size(38.dp)
+                .background(Color(0xFF0A2418), CircleShape)
+                .drawBehind {
+                    val stroke = 1.5.dp.toPx()
+                    val r = size.minDimension / 2f
+                    drawCircle(
+                        color = Gold.copy(alpha = 0.65f),
+                        radius = r - stroke / 2,
+                        style = Stroke(stroke)
+                    )
+                }
+                .clickable { onShowRules() },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "?",
+                color = Gold,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
         }
     }
 }

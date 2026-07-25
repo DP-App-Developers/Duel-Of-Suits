@@ -16,11 +16,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dehong.duelofSuits.model.Difficulty
 import com.dehong.duelofSuits.ui.screens.GameScreen
 import com.dehong.duelofSuits.ui.screens.HomeScreen
+import com.dehong.duelofSuits.ui.screens.RulesScreen
 import com.dehong.duelofSuits.ui.theme.DuelOfSuitsTheme
 import com.dehong.duelofSuits.viewmodel.GameViewModelFactory
 
 sealed class AppScreen {
     object Home : AppScreen()
+    object Rules : AppScreen()
     data class Game(val playerCount: Int, val difficulty: Difficulty, val sessionId: Int) : AppScreen()
 }
 
@@ -43,10 +45,14 @@ class MainActivity : ComponentActivity() {
 
             DuelOfSuitsTheme {
                 when (val screen = currentScreen) {
-                    AppScreen.Home -> HomeScreen(onStartGame = { count, diff ->
-                        sessionId++
-                        currentScreen = AppScreen.Game(count, diff, sessionId)
-                    })
+                    AppScreen.Home -> HomeScreen(
+                        onStartGame = { count, diff ->
+                            sessionId++
+                            currentScreen = AppScreen.Game(count, diff, sessionId)
+                        },
+                        onShowRules = { currentScreen = AppScreen.Rules }
+                    )
+                    AppScreen.Rules -> RulesScreen(onBack = { currentScreen = AppScreen.Home })
                     is AppScreen.Game -> GameScreen(
                         playerCount = screen.playerCount,
                         onNavigateHome = { currentScreen = AppScreen.Home },

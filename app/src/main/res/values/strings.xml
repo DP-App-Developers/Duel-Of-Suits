@@ -13,6 +13,11 @@
     <string name="home_player_singular">Player</string>
     <string name="home_player_plural">Players</string>
 
+    <!-- Rules Screen -->
+    <string name="rules_title">HOW TO PLAY</string>
+    <string name="rules_subtitle">RULES &amp; GUIDE</string>
+    <string name="rules_back">← BACK</string>
+
     <!-- Game Over Overlay -->
     <string name="game_over_victory">VICTORY</string>
     <string name="game_over_defeated">DEFEATED</string>
