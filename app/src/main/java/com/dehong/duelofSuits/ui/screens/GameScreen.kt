@@ -53,6 +53,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -94,6 +95,8 @@ import com.dehong.duelofSuits.ui.theme.TableGreen
 import com.dehong.duelofSuits.ui.theme.TableGreenLight
 import com.dehong.duelofSuits.ui.theme.TextOnDark
 import com.dehong.duelofSuits.R
+import com.dehong.duelofSuits.ui.sound.LocalSoundManager
+import com.dehong.duelofSuits.ui.sound.SoundManager
 import com.dehong.duelofSuits.viewmodel.GameViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -110,6 +113,8 @@ fun GameScreen(
 ) {
     val state by viewModel.gameState.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val context = LocalContext.current
+    val soundManager = remember { SoundManager(context) }
     val registry = remember { PositionRegistry() }
     val flyingCards = remember { mutableStateListOf<FlyingCard>() }
     val playerBubbles = remember { mutableStateMapOf<Int, String>() }
@@ -158,7 +163,7 @@ fun GameScreen(
     LaunchedEffect(Unit) {
         viewModel.animationEvents.collect { event ->
             handleAnimationEvent(event, registry, flyingCards, scope, density, cardWidth, playerCount,
-                viewModel.boardNumCols.value)
+                viewModel.boardNumCols.value, soundManager)
             if (event is AnimationEvent.DealCard) {
                 scope.launch {
                     delay(event.delayMs)
@@ -201,7 +206,8 @@ fun GameScreen(
         LocalFlyingCards provides flyingCards.map { it.card }.toSet(),
         LocalCardWidth provides cardWidth,
         LocalCardHeight provides cardHeight,
-        LocalTableResizing provides false
+        LocalTableResizing provides false,
+        LocalSoundManager provides soundManager
     ) {
         Box(
             modifier = Modifier
@@ -538,7 +544,8 @@ private fun handleAnimationEvent(
     density: androidx.compose.ui.unit.Density,
     cardWidth: androidx.compose.ui.unit.Dp,
     playerCount: Int,
-    numCols: Int
+    numCols: Int,
+    soundManager: com.dehong.duelofSuits.ui.sound.SoundManager
 ) {
     when (event) {
         is AnimationEvent.DealCard -> {
@@ -564,7 +571,8 @@ private fun handleAnimationEvent(
                     durationMs = 500,
                     flyingCards = flyingCards,
                     removeAfter = false,
-                    rotation = dealRotation
+                    rotation = dealRotation,
+                    onStart = { soundManager.playCardSound() }
                 )
             }
         }
@@ -585,7 +593,8 @@ private fun handleAnimationEvent(
                     from = startOffset,
                     to = endOffset,
                     durationMs = 450,
-                    flyingCards = flyingCards
+                    flyingCards = flyingCards,
+                    onStart = { soundManager.playCardSound() }
                 )
             }
         }
@@ -606,7 +615,8 @@ private fun handleAnimationEvent(
                     from = startOffset,
                     to = endOffset,
                     durationMs = 450,
-                    flyingCards = flyingCards
+                    flyingCards = flyingCards,
+                    onStart = { soundManager.playCardSound() }
                 )
             }
         }
@@ -630,7 +640,8 @@ private fun handleAnimationEvent(
                             from = start,
                             to = end,
                             durationMs = 220,
-                            flyingCards = flyingCards
+                            flyingCards = flyingCards,
+                            onStart = { soundManager.playCardSound() }
                         )
                     }
                 }
@@ -667,7 +678,8 @@ private fun handleAnimationEvent(
                             from = start,
                             to = end,
                             durationMs = 350,
-                            flyingCards = flyingCards
+                            flyingCards = flyingCards,
+                            onStart = { soundManager.playCardSound() }
                         )
                     }
                 }
@@ -685,7 +697,8 @@ private suspend fun animateCard(
     durationMs: Int,
     flyingCards: MutableList<FlyingCard>,
     removeAfter: Boolean = true,
-    rotation: Float = 0f
+    rotation: Float = 0f,
+    onStart: (() -> Unit)? = null
 ) {
     val animatable = Animatable(from, Offset.VectorConverter)
     val flying = FlyingCard(
@@ -696,6 +709,7 @@ private suspend fun animateCard(
         rotation = rotation
     )
     flyingCards.add(flying)
+    onStart?.invoke()
     animatable.animateTo(to, animationSpec = tween(durationMs, easing = FastOutSlowInEasing))
     if (removeAfter) flyingCards.remove(flying)
 }
