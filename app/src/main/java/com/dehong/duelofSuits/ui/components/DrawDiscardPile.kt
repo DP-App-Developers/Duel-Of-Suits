@@ -1,18 +1,19 @@
 package com.dehong.duelofSuits.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
@@ -29,25 +30,8 @@ import com.dehong.duelofSuits.model.Rank
 import com.dehong.duelofSuits.model.Suit
 import com.dehong.duelofSuits.ui.animation.PositionKey
 import com.dehong.duelofSuits.ui.animation.PositionRegistry
+import com.dehong.duelofSuits.ui.theme.CardRed
 import com.dehong.duelofSuits.ui.theme.Gold
-
-@Composable
-fun DrawDiscardPiles(
-    drawPileCount: Int,
-    discardTopCard: Card?,
-    registry: PositionRegistry,
-    trumpCard: Card? = null,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-    ) {
-        DrawPile(count = drawPileCount, registry = registry, trumpCard = trumpCard)
-        DiscardPile(topCard = discardTopCard, registry = registry)
-    }
-}
 
 @Composable
 fun DrawPile(
@@ -89,9 +73,19 @@ fun DrawPile(
                             registry.register(PositionKey.DrawPile, coords)
                         })
                 } else {
-                    CardPlaceholder(modifier = Modifier.onGloballyPositioned { coords ->
-                        registry.register(PositionKey.DrawPile, coords)
-                    })
+                    val ghostSuit = (trumpCard as? Card.SuitedCard)?.suit
+                    if (ghostSuit != null) {
+                        TrumpGhostPlaceholder(
+                            suit = ghostSuit,
+                            modifier = Modifier.onGloballyPositioned { coords ->
+                                registry.register(PositionKey.DrawPile, coords)
+                            }
+                        )
+                    } else {
+                        CardPlaceholder(modifier = Modifier.onGloballyPositioned { coords ->
+                            registry.register(PositionKey.DrawPile, coords)
+                        })
+                    }
                 }
             }
         }
@@ -104,6 +98,7 @@ fun DrawPileBadgeOverlay(
     registry: PositionRegistry,
     modifier: Modifier = Modifier
 ) {
+    if (count == 0) return
     val pileOffset = registry.getOffset(PositionKey.DrawPile)
     if (pileOffset == Offset.Zero) return
     val x = pileOffset.x.toInt() - 6
@@ -168,35 +163,40 @@ fun DrawPileBadgeOverlay(
 }
 
 @Composable
-fun DiscardPile(
-    topCard: Card?,
-    registry: PositionRegistry,
+private fun TrumpGhostPlaceholder(
+    suit: Suit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+    val shape       = cardShape()
+    val cardWidth   = LocalCardWidth.current
+    val cardHeight  = LocalCardHeight.current
+    val symbolColor = if (suit.isRed) CardRed else Color(0xFFCDD8E8)
+    val glowColor   = if (suit.isRed) CardRed else Color(0xFF8FAACC)
+
+    Box(
         modifier = modifier
+            .size(cardWidth, cardHeight)
+            .border(1.dp, Gold.copy(alpha = 0.28f), shape)
+            .clip(shape)
+            .background(Color.White.copy(alpha = 0.03f)),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "DISCARD",
-            color = Color.White.copy(alpha = 0.6f),
-            fontSize = 9.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            glowColor.copy(alpha = 0.14f),
+                            Color.Transparent
+                        )
+                    )
+                )
         )
-        if (topCard != null) {
-            CardView(
-                card = topCard,
-                faceDown = false,
-                modifier = Modifier.onGloballyPositioned { coords ->
-                    registry.register(PositionKey.DiscardPile, coords)
-                }
-            )
-        } else {
-            CardPlaceholder(modifier = Modifier.onGloballyPositioned { coords ->
-                registry.register(PositionKey.DiscardPile, coords)
-            })
-        }
+        Text(
+            text = suit.symbol,
+            color = symbolColor.copy(alpha = 0.32f),
+            fontSize = (cardWidth.value * 0.52f).sp
+        )
     }
 }
